@@ -23,6 +23,35 @@ gc = gspread.authorize(credentials)
 SPREADSHEET_URL = 'https://docs.google.com/spreadsheets/d/1d5kxv7lFE9ZZVSfCSvHAcxHuyjsXh8_Jr88btbfcKDM/edit?usp=drive_link'
 sheet = gc.open_by_url(SPREADSHEET_URL).sheet1
 
+# --- Inyección de CSS para personalizar los colores de las opciones ---
+st.markdown(
+    """
+    <style>
+    /* Opciones del selectbox para pasos */
+    div[role="option"][data-value="Sí (DropControl)"] {
+        background-color: #0a53a8 !important;
+        color: #8fb2d6 !important;
+    }
+    div[role="option"][data-value="Sí (CDTEC IF)"] {
+        background-color: #5a3286 !important;
+        color: #e0cde2 !important;
+    }
+    div[role="option"][data-value="Sí"] {
+        background-color: #11734b !important;
+        color: #c1e1a4 !important;
+    }
+    div[role="option"][data-value="No"] {
+        background-color: #b10202 !important;
+        color: #ffcec1 !important;
+    }
+    div[role="option"][data-value="Programado"] {
+        background-color: #ffe5a0 !important;
+        color: #a3753c !important;
+    }
+    </style>
+    """, unsafe_allow_html=True
+)
+
 # --- FUNCIÓN PARA OBTENER LOS DATOS DE LA HOJA ---
 def get_data():
     try:
@@ -126,7 +155,7 @@ def main():
         # Se agrega "Todos" en el selector de sector para poder omitir este filtro si se desea
         selected_sector = st.selectbox("Sector de Riego", ["Todos"] + filtered_sectores, key="sector")
     else:
-        selected_sector = "Todos"  # Valor por defecto cuando no se ha seleccionado cuenta
+        selected_sector = "Todos"  # Valor por defecto si no se selecciona cuenta
 
     if st.button("Buscar Registro"):
         if selected_cuenta == "Seleccione una cuenta":
