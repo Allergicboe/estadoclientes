@@ -58,13 +58,12 @@ def update_steps(rows, steps_updates, consultoria_value):
     # Actualizar cada paso y su fecha correspondiente
     for step in steps_updates:
         selected_option = step["value"]
-        # Si se muestra "Vacío", se enviará una cadena vacía
         update_value = "" if selected_option == "Vacío" else selected_option
         step_col = step["step_col"]
         date_col = step["date_col"]
         for row in rows:
             cells_to_update.append(Cell(row, step_col, update_value))
-            # Actualiza la fecha si el avance se indicó
+            # Actualiza la fecha si se indicó un avance
             if update_value in ['Sí', 'Programado', 'Sí (DropControl)', 'Sí (CDTEC IF)']:
                 cells_to_update.append(Cell(row, date_col, now))
             else:
@@ -97,40 +96,22 @@ def main():
     st.header("Buscar Registro")
     
     # --- Selección de Cuenta ---
-    # Permite buscar y seleccionar una cuenta; se agrega la opción "Seleccione una cuenta" por defecto
-    search_cuenta = st.text_input("Buscar en Cuenta:", key="buscar_cuenta")
-    if search_cuenta:
-        filtered_cuentas = [c for c in unique_cuentas if search_cuenta.lower() in c.lower()]
-    else:
-        filtered_cuentas = unique_cuentas
-
-    if not filtered_cuentas:
-        st.error("No se encontró ninguna cuenta que coincida con la búsqueda.")
-        st.stop()
-
-    # Se agrega la opción por defecto
-    cuentas_options = ["Seleccione una cuenta"] + filtered_cuentas
+    cuentas_options = ["Seleccione una cuenta"] + unique_cuentas
     selected_cuenta = st.selectbox("Cuenta", cuentas_options, key="cuenta")
     
     # --- Selección de Sector de Riego (solo si se ha seleccionado una cuenta válida) ---
     if selected_cuenta != "Seleccione una cuenta":
         sectores_para_cuenta = [row[1] for row in data[1:] if row[0] == selected_cuenta]
         unique_sectores = sorted(set(sectores_para_cuenta))
-    
-        search_sector = st.text_input("Buscar en Sector de Riego:", key="buscar_sector")
-        if search_sector:
-            filtered_sectores = [s for s in unique_sectores if search_sector.lower() in s.lower()]
-        else:
-            filtered_sectores = unique_sectores
-
-        # Se agrega "Todos" en el selector de sector para poder omitir este filtro si se desea
-        selected_sector = st.selectbox("Sector de Riego", ["Todos"] + filtered_sectores, key="sector")
+        selected_sector = st.selectbox("Sector de Riego", ["Todos"] + unique_sectores, key="sector")
     else:
         selected_sector = "Todos"  # Valor por defecto cuando no se ha seleccionado cuenta
 
+    # --- Botón para Buscar Registro ---
     if st.button("Buscar Registro"):
         if selected_cuenta == "Seleccione una cuenta":
             st.error("❌ Por favor, seleccione una cuenta válida.")
+            st.session_state.rows = None
         else:
             rows = find_rows(selected_cuenta, selected_sector, data)
             if not rows:
@@ -143,12 +124,11 @@ def main():
     if "rows" not in st.session_state:
         st.session_state.rows = None
 
-    # --- Formulario para Actualizar Datos ---
-    if st.session_state.rows:
+    # --- Mostrar el Formulario para Actualizar Datos solo si se obtuvo un registro ---
+    if st.session_state.rows is not None:
         st.header("Actualizar Datos")
         with st.form("update_form"):
-            # Mapeo de pasos con las columnas correspondientes:
-            # Ejemplo: "Ingreso a Planilla Clientes Nuevos": Columna D (4) y Fecha en Columna E (5)
+            # Mapeo de pasos con sus respectivas columnas
             steps_mapping = [
                 {"step_label": "Ingreso a Planilla Clientes Nuevos", "step_col": 4, "date_col": 5},
                 {"step_label": "Correo Presentación y Solicitud Información", "step_col": 6, "date_col": 7},
@@ -171,15 +151,11 @@ def main():
             }
 
             steps_updates = []
-            # Por cada paso, se previsualiza la opción actual de la planilla; si está vacía se muestra "Vacío"
+            # Para cada paso, se previsualiza la opción actual en la planilla (o se muestra "Vacío")
             for i, step in enumerate(steps_mapping):
                 step_label = step["step_label"]
                 default_val = sheet.cell(st.session_state.rows[0], step["step_col"]).value
-                if default_val is None or default_val.strip() == "":
-                    display_val = "Vacío"
-                else:
-                    display_val = default_val
-                # Si el valor actual no está en la lista de opciones, se agrega al inicio
+                display_val = default_val.strip() if default_val and default_val.strip() != "" else "Vacío"
                 options_for_select = step_options[step_label].copy()
                 if display_val not in options_for_select:
                     options_for_select = [display_val] + options_for_select
@@ -199,10 +175,7 @@ def main():
 
             # --- Selección para "Consultoría" (Columna C) ---
             consultoria_default = sheet.cell(st.session_state.rows[0], 3).value
-            if consultoria_default is None or consultoria_default.strip() == "":
-                display_consultoria = "Vacío"
-            else:
-                display_consultoria = consultoria_default
+            display_consultoria = consultoria_default.strip() if consultoria_default and consultoria_default.strip() != "" else "Vacío"
             consultoria_options = ["Sí", "No"]
             if display_consultoria not in consultoria_options:
                 consultoria_options = [display_consultoria] + consultoria_options
