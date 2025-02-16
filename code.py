@@ -12,6 +12,10 @@ st.set_page_config(
     layout="wide"
 )
 
+# Función para reiniciar la búsqueda (oculta "Registro:" si se cambia la cuenta o sector)
+def reset_search():
+    st.session_state.rows = None
+
 # --- CONFIGURACIÓN DE LAS CREDENCIALES Y CONEXIÓN A GOOGLE SHEETS ---
 scope = [
     'https://www.googleapis.com/auth/spreadsheets',
@@ -30,7 +34,6 @@ def handle_quota_error(e):
     error_str = str(e).lower()
     if "quota" in error_str or "limit" in error_str:
         st.error("❌ Se ha alcanzado el límite de API de Google. Reiniciando la aplicación...")
-        # Opcional: esperar un segundo antes de reiniciar
         time.sleep(1)
         st.experimental_rerun()
 
@@ -51,7 +54,7 @@ def find_rows(selected_cuenta, selected_sector, data):
         match_cuenta = (row[0] == selected_cuenta)
         match_sector = (selected_sector == "Todos" or row[1] == selected_sector)
         if match_cuenta and match_sector:
-            rows.append(i + 2)  # +2 para ajustar el índice (fila 1 es el encabezado)
+            rows.append(i + 2)  # +2 para ajustar al índice de Google Sheets (fila 1 es encabezado)
     return rows
 
 # --- FUNCIÓN PARA ACTUALIZAR CELDAS (Consultoría, Pasos y Comentarios) ---
@@ -110,15 +113,15 @@ def main():
 
     st.header("Buscar Registro")
     
-    # --- Selección de Cuenta ---
+    # --- Selección de Cuenta (se reinicia la búsqueda si se cambia) ---
     cuentas_options = ["Seleccione una cuenta"] + unique_cuentas
-    selected_cuenta = st.selectbox("Cuenta", cuentas_options, key="cuenta")
+    selected_cuenta = st.selectbox("Cuenta", cuentas_options, key="cuenta", on_change=reset_search)
     
     # --- Selección de Sector de Riego (solo si se ha seleccionado una cuenta válida) ---
     if selected_cuenta != "Seleccione una cuenta":
         sectores_para_cuenta = [row[1] for row in data[1:] if row[0] == selected_cuenta]
         unique_sectores = sorted(set(sectores_para_cuenta))
-        selected_sector = st.selectbox("Sector de Riego", ["Todos"] + unique_sectores, key="sector")
+        selected_sector = st.selectbox("Sector de Riego", ["Todos"] + unique_sectores, key="sector", on_change=reset_search)
     else:
         selected_sector = "Todos"
 
@@ -142,12 +145,12 @@ def main():
     # --- Mostrar el Formulario para Actualizar Datos solo si se obtuvo un registro ---
     if st.session_state.rows is not None:
         st.header("Registro:")
-        # Utilizamos la información cacheada para extraer los valores de la fila
-        fila_index = st.session_state.rows[0] - 1  # Ajuste por índice de lista (base 0)
+        # Se utiliza la información cacheada para extraer los valores de la fila
+        fila_index = st.session_state.rows[0] - 1  # Ajuste por índice (lista base 0)
         fila_datos = data[fila_index]
 
         with st.form("update_form"):
-            # 1. Consultoría (Columna C -> índice 2)
+            # 1. Consultoría (Columna C, índice 2)
             consultoria_default = fila_datos[2] if len(fila_datos) >= 3 else ""
             display_consultoria = consultoria_default.strip() if consultoria_default and consultoria_default.strip() != "" else "Vacío"
             consultoria_options = ["Sí", "No"]
@@ -159,7 +162,7 @@ def main():
                 consultoria_index = 0
             consultoria_value = st.selectbox("Consultoría", options=consultoria_options, index=consultoria_index)
 
-            # 2. Pasos a actualizar (en el orden indicado)
+            # 2. Pasos a actualizar (según el orden indicado)
             steps_mapping = [
                 {"step_label": "Ingreso a Planilla Clientes Nuevos", "step_col": 4, "date_col": 5},
                 {"step_label": "Correo Presentación y Solicitud Información", "step_col": 6, "date_col": 7},
@@ -181,8 +184,8 @@ def main():
             steps_updates = []
             for i, step in enumerate(steps_mapping):
                 step_label = step["step_label"]
-                # Se obtiene el valor de la celda usando la información cacheada
-                col_index = step["step_col"] - 1  # Ajuste por índice base 0
+                # Se obtiene el valor de la celda usando la información cacheada (ajuste índice base 0)
+                col_index = step["step_col"] - 1
                 default_val = fila_datos[col_index] if len(fila_datos) > col_index else ""
                 display_val = default_val.strip() if default_val and default_val.strip() != "" else "Vacío"
                 options_for_select = step_options[step_label].copy()
