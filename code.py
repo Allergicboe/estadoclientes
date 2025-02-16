@@ -16,49 +16,58 @@ gc = gspread.authorize(credentials)
 SPREADSHEET_URL = 'https://docs.google.com/spreadsheets/d/1d5kxv7lFE9ZZVSfCSvHAcxHuyjsXh8_Jr88btbfcKDM/edit?usp=drive_link'
 sheet = gc.open_by_url(SPREADSHEET_URL).sheet1
 
-# --- FUNCIONES AUXILIARES ---
-
+# --- FUNCIÓN PARA OBTENER LOS DATOS DE LA HOJA ---
 def get_data():
-    """Obtiene todos los valores de la hoja."""
     try:
         return sheet.get_all_values()
     except Exception as e:
         st.error(f"❌ Error al obtener los datos: {e}")
         return None
 
-def find_rows(option, id_value, data):
+# --- FUNCIÓN PARA BUSCAR FILAS SEGÚN "Cuenta" Y "Sector de Riego" ---
+def find_rows(selected_cuenta, selected_sector, data):
     """
-    Busca filas por N° Cuenta o N° Sector de Riego.
-    Si option es 'Cuenta', se busca en la primera columna (índice 0);
-    si es 'Campo', se busca en la columna 3 (índice 2).
-    Retorna una lista con el número de fila (contando desde 1) de cada coincidencia.
+    Busca filas en base a la Cuenta (columna A) y Sector de Riego (columna B).
+    Si se selecciona "--Todos--" en alguno de los dos, se ignora ese filtro.
+    Retorna una lista de números de fila (contando desde 1) donde se cumple la condición.
     """
-    column_index = 0 if option == 'Cuenta' else 2  
-    return [i + 2 for i, row in enumerate(data[1:]) if row[column_index] == id_value]
+    rows = []
+    for i, row in enumerate(data[1:]):  # omite la fila de encabezado
+        # Columna A (índice 0): Cuenta, Columna B (índice 1): Sector de Riego
+        match_cuenta = (selected_cuenta == "--Todos--" or row[0] == selected_cuenta)
+        match_sector = (selected_sector == "--Todos--" or row[1] == selected_sector)
+        if match_cuenta and match_sector:
+            rows.append(i + 2)  # +2: una por omitir encabezado y el índice empieza en 0
+    return rows
 
+# --- FUNCIÓN PARA ACTUALIZAR LAS CELDAS EN BATCH ---
 def update_steps(rows, steps_updates, consultoria_value):
     """
-    Actualiza en batch las celdas correspondientes a cada paso y a la fecha,
-    y además actualiza la columna "Consultoría" (columna 4).
+    Actualiza en batch los pasos y sus fechas correspondientes, además de la columna de Consultoría.
+    La estructura de steps_updates debe incluir:
+      - step_label: Nombre del paso.
+      - step_col: Número de columna del paso.
+      - date_col: Número de columna para la fecha asociada.
+      - value: Valor seleccionado para el paso.
     """
     now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     cells_to_update = []
 
-    # Actualizar cada paso y la fecha asociada
+    # Actualizar cada paso y su fecha correspondiente
     for step in steps_updates:
         selected_option = step["value"]
-        col = step["col"]
+        step_col = step["step_col"]
         date_col = step["date_col"]
         for row in rows:
-            cells_to_update.append(Cell(row, col, selected_option))
-            # Si el valor seleccionado indica avance, se actualiza la fecha; de lo contrario se limpia
+            cells_to_update.append(Cell(row, step_col, selected_option))
+            # Se actualiza la fecha si se selecciona un valor que indica avance
             if selected_option in ['Sí', 'Programado', 'DropControl', 'CDTEC IF']:
                 cells_to_update.append(Cell(row, date_col, now))
             elif selected_option in ['No', 'No aplica']:
                 cells_to_update.append(Cell(row, date_col, ''))
 
-    # Actualizar la columna "Consultoría" (columna 4)
-    consultoria_col = 4
+    # Actualizar la columna "Consultoría" (Columna C, número 3)
+    consultoria_col = 3
     for row in rows:
         cells_to_update.append(Cell(row, consultoria_col, consultoria_value))
 
@@ -69,44 +78,72 @@ def update_steps(rows, steps_updates, consultoria_value):
         st.error(f"❌ Error en la actualización en batch: {e}")
 
 # --- FUNCIÓN PRINCIPAL CON INTERFAZ STREAMLIT ---
-
 def main():
-    st.title("Actualizador de Planilla (Batch Update)")
-    
+    st.title("Actualizador de Planilla")
+
     # Obtener datos de la hoja
     data = get_data()
     if data is None:
         st.stop()
 
-    # Usar st.session_state para mantener las filas encontradas entre interacciones
-    if "rows" not in st.session_state:
-        st.session_state.rows = None
+    # Extraer valores únicos para "Cuenta" (columna A) y "Sector de Riego" (columna B)
+    unique_cuentas = sorted(set(row[0] for row in data[1:]))
+    unique_sectores = sorted(set(row[1] for row in data[1:]))
 
     st.header("Buscar Registro")
-    option = st.selectbox("Selecciona el tipo de ID", ["Cuenta", "Campo"])
-    id_value = st.text_input(f"Ingresa la ID de {option}:")
+
+    # Buscador y selector para "Cuenta"
+    search_cuenta = st.text_input("Buscar en Cuenta:")
+    if search_cuenta:
+        filtered_cuentas = [c for c in unique_cuentas if search_cuenta.lower() in c.lower()]
+    else:
+        filtered_cuentas = unique_cuentas
+    selected_cuenta = st.selectbox("Cuenta", ["--Todos--"] + filtered_cuentas)
+
+    # Buscador y selector para "Sector de Riego"
+    search_sector = st.text_input("Buscar en Sector de Riego:")
+    if search_sector:
+        filtered_sectores = [s for s in unique_sectores if search_sector.lower() in s.lower()]
+    else:
+        filtered_sectores = unique_sectores
+    selected_sector = st.selectbox("Sector de Riego", ["--Todos--"] + filtered_sectores)
 
     if st.button("Buscar Registro"):
-        rows = find_rows(option, id_value, data)
+        rows = find_rows(selected_cuenta, selected_sector, data)
         if not rows:
-            st.error(f"❌ No se encontró ninguna fila con esa ID de {option}.")
+            st.error("❌ No se encontró ninguna fila con los criterios seleccionados.")
             st.session_state.rows = None
         else:
             st.session_state.rows = rows
-            if option == "Cuenta":
-                st.warning("⚠️ ADVERTENCIA: Se actualizarán todas las filas asociadas a la ID de la cuenta seleccionada.")
             st.success(f"Se encontró(n) {len(rows)} fila(s).")
 
-    # Si se encontraron filas, se muestra el formulario para actualizar
-    if st.session_state.rows:
-        st.header("Actualizar Pasos")
-        with st.form("update_form"):
-            # Definir columnas para los pasos y sus columnas de fecha (contando desde 1)
-            step_columns = [5, 7, 9, 11, 13, 15, 17]       # Columnas de los pasos
-            date_columns = [6, 8, 10, 12, 14, 16, 18]        # Columnas de las fechas
-            consultoria_col = 4                             # Columna de "Consultoría"
+    # Inicializar st.session_state.rows si no existe
+    if "rows" not in st.session_state:
+        st.session_state.rows = None
 
-            # Opciones para cada paso
+    # Si se encontraron filas, mostrar formulario para actualizar
+    if st.session_state.rows:
+        st.header("Actualizar Datos")
+        with st.form("update_form"):
+            # Mapeo de pasos con las nuevas columnas:
+            # "Ingreso a Planilla Clientes Nuevos": Columna D (4) y Fecha en Columna E (5)
+            # "Correo Presentación y Solicitud Información": Columna F (6) y Fecha en Columna G (7)
+            # "Agregar Puntos Críticos": Columna H (8) y Fecha en Columna I (9)
+            # "Generar Capacitación Plataforma": Columna J (10) y Fecha en Columna K (11)
+            # "Generar Documento Power BI": Columna L (12) y Fecha en Columna M (13)
+            # "Generar Capacitación Power BI": Columna N (14) y Fecha en Columna O (15)
+            # "Generar Estrategia de Riego": Columna P (16) y Fecha en Columna Q (17)
+            steps_mapping = [
+                {"step_label": "Ingreso a Planilla Clientes Nuevos", "step_col": 4, "date_col": 5},
+                {"step_label": "Correo Presentación y Solicitud Información", "step_col": 6, "date_col": 7},
+                {"step_label": "Agregar Puntos Críticos", "step_col": 8, "date_col": 9},
+                {"step_label": "Generar Capacitación Plataforma", "step_col": 10, "date_col": 11},
+                {"step_label": "Generar Documento Power BI", "step_col": 12, "date_col": 13},
+                {"step_label": "Generar Capacitación Power BI", "step_col": 14, "date_col": 15},
+                {"step_label": "Generar Estrategia de Riego", "step_col": 16, "date_col": 17},
+            ]
+
+            # Opciones disponibles para cada paso
             step_options = {
                 "Ingreso a Planilla Clientes Nuevos": ['Sí', 'No'],
                 "Correo Presentación y Solicitud Información": ['Sí', 'No', 'Programado'],
@@ -118,14 +155,10 @@ def main():
             }
 
             steps_updates = []
-            # Por cada columna de paso, se obtiene el label desde el encabezado y se crea un selectbox
-            for i, col in enumerate(step_columns):
-                step_label = sheet.cell(1, col).value  # Encabezado de la columna
-                if step_label not in step_options:
-                    st.warning(f"❌ Advertencia: '{step_label}' no está en las opciones definidas. Se omitirá.")
-                    continue
-                # Obtener valor por defecto de la primera fila encontrada
-                default_val = sheet.cell(st.session_state.rows[0], col).value
+            # Por cada paso, se crea un selectbox con su respectiva opción, tomando como valor por defecto el de la primera fila encontrada
+            for i, step in enumerate(steps_mapping):
+                step_label = step["step_label"]
+                default_val = sheet.cell(st.session_state.rows[0], step["step_col"]).value
                 try:
                     default_index = step_options[step_label].index(default_val)
                 except ValueError:
@@ -138,13 +171,13 @@ def main():
                 )
                 steps_updates.append({
                     "step_label": step_label,
-                    "col": col,
-                    "date_col": date_columns[i],
+                    "step_col": step["step_col"],
+                    "date_col": step["date_col"],
                     "value": selected_val
                 })
 
-            # Selectbox para "Consultoría"
-            consultoria_default = sheet.cell(st.session_state.rows[0], consultoria_col).value
+            # Selector para "Consultoría" (Columna C, número 3)
+            consultoria_default = sheet.cell(st.session_state.rows[0], 3).value
             consultoria_options = ["Sí", "No"]
             try:
                 consultoria_index = consultoria_options.index(consultoria_default)
