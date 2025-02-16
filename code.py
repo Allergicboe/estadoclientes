@@ -103,8 +103,11 @@ def update_steps(rows, steps_updates, consultoria_value, comentarios_value):
 def main():
     st.title("📌 Estado de Clientes")
 
-    # Obtener datos de la hoja (cacheados durante 60 segundos)
-    data = get_data()
+    # Pre-cargar los datos de la hoja en session_state para evitar múltiples llamadas a la API
+    if "data" not in st.session_state:
+        st.session_state.data = get_data()
+    data = st.session_state.data
+
     if data is None:
         st.stop()
 
@@ -145,7 +148,7 @@ def main():
     # --- Mostrar el Formulario para Actualizar Datos solo si se obtuvo un registro ---
     if st.session_state.rows is not None:
         st.header("Registro:")
-        # Se utiliza la información cacheada para extraer los valores de la fila
+        # Se utiliza la información precargada para extraer los valores de la fila
         fila_index = st.session_state.rows[0] - 1  # Ajuste por índice (lista base 0)
         fila_datos = data[fila_index]
 
@@ -184,7 +187,7 @@ def main():
             steps_updates = []
             for i, step in enumerate(steps_mapping):
                 step_label = step["step_label"]
-                # Se obtiene el valor de la celda usando la información cacheada (ajuste índice base 0)
+                # Se obtiene el valor de la celda usando la información precargada (ajuste índice base 0)
                 col_index = step["step_col"] - 1
                 default_val = fila_datos[col_index] if len(fila_datos) > col_index else ""
                 display_val = default_val.strip() if default_val and default_val.strip() != "" else "Vacío"
