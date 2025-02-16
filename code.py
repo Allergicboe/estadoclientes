@@ -72,6 +72,11 @@ def update_steps(rows, steps_updates, consultoria_value, comentarios_value):
     for row in rows:
         cells_to_update.append(Cell(row, comentarios_col, comentarios_value))
 
+    # Actualizar Última Actualización (Columna S, número 19)
+    ultima_actualizacion_col = 19
+    for row in rows:
+        cells_to_update.append(Cell(row, ultima_actualizacion_col, now))
+
     try:
         sheet.update_cells(cells_to_update, value_input_option='USER_ENTERED')
         st.success("✅ Actualización completada correctamente.")
