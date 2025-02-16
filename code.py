@@ -3,6 +3,7 @@ import gspread
 from gspread import Cell
 from datetime import datetime
 from google.oauth2.service_account import Credentials
+import time
 
 # Configuración de la página
 st.set_page_config(
@@ -24,11 +25,22 @@ gc = gspread.authorize(credentials)
 SPREADSHEET_URL = 'https://docs.google.com/spreadsheets/d/1d5kxv7lFE9ZZVSfCSvHAcxHuyjsXh8_Jr88btbfcKDM/edit?usp=drive_link'
 sheet = gc.open_by_url(SPREADSHEET_URL).sheet1
 
-# --- FUNCIÓN PARA OBTENER LOS DATOS DE LA HOJA ---
+# --- Función auxiliar para detectar errores por límite de API ---
+def handle_quota_error(e):
+    error_str = str(e).lower()
+    if "quota" in error_str or "limit" in error_str:
+        st.error("❌ Se ha alcanzado el límite de API de Google. Reiniciando la aplicación...")
+        # Opcional: esperar un segundo antes de reiniciar
+        time.sleep(1)
+        st.experimental_rerun()
+
+# --- FUNCIÓN PARA OBTENER LOS DATOS DE LA HOJA (con cacheo) ---
+@st.cache_data(ttl=60)  # Cachea los datos por 60 segundos para reducir llamadas a la API
 def get_data():
     try:
         return sheet.get_all_values()
     except Exception as e:
+        handle_quota_error(e)
         st.error(f"❌ Error al obtener los datos: {e}")
         return None
 
@@ -39,7 +51,7 @@ def find_rows(selected_cuenta, selected_sector, data):
         match_cuenta = (row[0] == selected_cuenta)
         match_sector = (selected_sector == "Todos" or row[1] == selected_sector)
         if match_cuenta and match_sector:
-            rows.append(i + 2)  # +2 para omitir encabezado y ajustar índice (base 1)
+            rows.append(i + 2)  # +2 para ajustar el índice (fila 1 es el encabezado)
     return rows
 
 # --- FUNCIÓN PARA ACTUALIZAR CELDAS (Consultoría, Pasos y Comentarios) ---
@@ -81,13 +93,14 @@ def update_steps(rows, steps_updates, consultoria_value, comentarios_value):
         sheet.update_cells(cells_to_update, value_input_option='USER_ENTERED')
         st.success("✅ Se guardaron los cambios correctamente.")
     except Exception as e:
+        handle_quota_error(e)
         st.error(f"❌ Error en la actualización en batch: {e}")
 
 # --- FUNCIÓN PRINCIPAL CON INTERFAZ STREAMLIT ---
 def main():
     st.title("📌 Estado de Clientes")
 
-    # Obtener datos de la hoja
+    # Obtener datos de la hoja (cacheados durante 60 segundos)
     data = get_data()
     if data is None:
         st.stop()
@@ -129,12 +142,14 @@ def main():
     # --- Mostrar el Formulario para Actualizar Datos solo si se obtuvo un registro ---
     if st.session_state.rows is not None:
         st.header("Registro:")
+        # Utilizamos la información cacheada para extraer los valores de la fila
+        fila_index = st.session_state.rows[0] - 1  # Ajuste por índice de lista (base 0)
+        fila_datos = data[fila_index]
+
         with st.form("update_form"):
-            # 1. Consultoría (Columna C)
-            consultoria_default = sheet.cell(st.session_state.rows[0], 3).value
-            display_consultoria = (
-                consultoria_default.strip() if consultoria_default and consultoria_default.strip() != "" else "Vacío"
-            )
+            # 1. Consultoría (Columna C -> índice 2)
+            consultoria_default = fila_datos[2] if len(fila_datos) >= 3 else ""
+            display_consultoria = consultoria_default.strip() if consultoria_default and consultoria_default.strip() != "" else "Vacío"
             consultoria_options = ["Sí", "No"]
             if display_consultoria not in consultoria_options:
                 consultoria_options = [display_consultoria] + consultoria_options
@@ -166,10 +181,10 @@ def main():
             steps_updates = []
             for i, step in enumerate(steps_mapping):
                 step_label = step["step_label"]
-                default_val = sheet.cell(st.session_state.rows[0], step["step_col"]).value
-                display_val = (
-                    default_val.strip() if default_val and default_val.strip() != "" else "Vacío"
-                )
+                # Se obtiene el valor de la celda usando la información cacheada
+                col_index = step["step_col"] - 1  # Ajuste por índice base 0
+                default_val = fila_datos[col_index] if len(fila_datos) > col_index else ""
+                display_val = default_val.strip() if default_val and default_val.strip() != "" else "Vacío"
                 options_for_select = step_options[step_label].copy()
                 if display_val not in options_for_select:
                     options_for_select = [display_val] + options_for_select
@@ -187,11 +202,9 @@ def main():
                     "value": selected_val
                 })
 
-            # 3. Comentarios (Columna R, número 18)
-            comentarios_default = sheet.cell(st.session_state.rows[0], 18).value
-            comentarios_value = st.text_area(
-                "Comentarios", value=comentarios_default if comentarios_default is not None else ""
-            )
+            # 3. Comentarios (Columna R, índice 17)
+            comentarios_default = fila_datos[17] if len(fila_datos) >= 18 else ""
+            comentarios_value = st.text_area("Comentarios", value=comentarios_default if comentarios_default is not None else "")
 
             submitted = st.form_submit_button("Guardar Cambios")
             if submitted:
