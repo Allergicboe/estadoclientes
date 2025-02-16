@@ -4,6 +4,13 @@ from gspread import Cell
 from datetime import datetime
 from google.oauth2.service_account import Credentials
 
+# Configuración de la página
+st.set_page_config(
+    page_title="Estado de Clientes",
+    page_icon="👥",
+    layout="wide"
+)
+
 # --- CONFIGURACIÓN DE LAS CREDENCIALES Y CONEXIÓN A GOOGLE SHEETS ---
 # Asegúrate de tener en st.secrets el JSON de la cuenta de servicio bajo la clave "gcp_service_account"
 scope = [
@@ -28,12 +35,12 @@ def get_data():
 def find_rows(selected_cuenta, selected_sector, data):
     """
     Busca filas en base a la Cuenta (columna A) y Sector de Riego (columna B).
-    Si se selecciona "--Todos--" en alguno de los dos, se ignora ese filtro.
+    Para Sector de Riego se permite la opción "Todos" para no filtrar.
     Retorna una lista de números de fila (contando desde 1) donde se cumple la condición.
     """
     rows = []
     for i, row in enumerate(data[1:]):  # omite la fila de encabezado
-        match_cuenta = (selected_cuenta == "Todos" or row[0] == selected_cuenta)
+        match_cuenta = (row[0] == selected_cuenta)
         match_sector = (selected_sector == "Todos" or row[1] == selected_sector)
         if match_cuenta and match_sector:
             rows.append(i + 2)  # +2: una por omitir encabezado y el índice empieza en 0
@@ -77,7 +84,7 @@ def update_steps(rows, steps_updates, consultoria_value):
 
 # --- FUNCIÓN PRINCIPAL CON INTERFAZ STREAMLIT ---
 def main():
-    st.title("Actualizador de Planilla")
+    st.title("🟢 Estado de Clientes")
 
     # Obtener datos de la hoja
     data = get_data()
@@ -90,25 +97,31 @@ def main():
     st.header("Buscar Registro")
     
     # --- Selección de Cuenta ---
+    # Permite buscar y seleccionar una cuenta; ya no se permite la opción "Todos"
     search_cuenta = st.text_input("Buscar en Cuenta:", key="buscar_cuenta")
     if search_cuenta:
         filtered_cuentas = [c for c in unique_cuentas if search_cuenta.lower() in c.lower()]
     else:
         filtered_cuentas = unique_cuentas
-    selected_cuenta = st.selectbox("Cuenta", ["Todos"] + filtered_cuentas, key="cuenta")
+
+    if not filtered_cuentas:
+        st.error("No se encontró ninguna cuenta que coincida con la búsqueda.")
+        st.stop()
+
+    selected_cuenta = st.selectbox("Cuenta", filtered_cuentas, key="cuenta")
 
     # --- Selección de Sector de Riego (filtrado por Cuenta) ---
-    if selected_cuenta != "Todos":
-        sectores_para_cuenta = [row[1] for row in data[1:] if row[0] == selected_cuenta]
-    else:
-        sectores_para_cuenta = [row[1] for row in data[1:]]
+    # Se muestra el buscador de Sector de Riego únicamente si se ha seleccionado una cuenta
+    sectores_para_cuenta = [row[1] for row in data[1:] if row[0] == selected_cuenta]
     unique_sectores = sorted(set(sectores_para_cuenta))
-
+    
     search_sector = st.text_input("Buscar en Sector de Riego:", key="buscar_sector")
     if search_sector:
         filtered_sectores = [s for s in unique_sectores if search_sector.lower() in s.lower()]
     else:
         filtered_sectores = unique_sectores
+
+    # Se agrega "Todos" en el buscador de sector para poder omitir este filtro si se desea
     selected_sector = st.selectbox("Sector de Riego", ["Todos"] + filtered_sectores, key="sector")
 
     if st.button("Buscar Registro"):
