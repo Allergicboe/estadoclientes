@@ -97,7 +97,7 @@ def main():
     st.header("Buscar Registro")
     
     # --- Selección de Cuenta ---
-    # Permite buscar y seleccionar una cuenta; ya no se permite la opción "Todos"
+    # Permite buscar y seleccionar una cuenta; se agrega la opción "Seleccione una cuenta" por defecto
     search_cuenta = st.text_input("Buscar en Cuenta:", key="buscar_cuenta")
     if search_cuenta:
         filtered_cuentas = [c for c in unique_cuentas if search_cuenta.lower() in c.lower()]
@@ -108,11 +108,16 @@ def main():
         st.error("No se encontró ninguna cuenta que coincida con la búsqueda.")
         st.stop()
 
-    selected_cuenta = st.selectbox("Cuenta", filtered_cuentas, key="cuenta")
-
+    # Se agrega la opción por defecto
+    cuentas_options = ["Seleccione una cuenta"] + filtered_cuentas
+    selected_cuenta = st.selectbox("Cuenta", cuentas_options, key="cuenta")
+    
     # --- Selección de Sector de Riego (filtrado por Cuenta) ---
-    # Se muestra el buscador de Sector de Riego únicamente si se ha seleccionado una cuenta
-    sectores_para_cuenta = [row[1] for row in data[1:] if row[0] == selected_cuenta]
+    # Se muestra el buscador de Sector de Riego únicamente si se ha seleccionado una cuenta válida
+    if selected_cuenta != "Seleccione una cuenta":
+        sectores_para_cuenta = [row[1] for row in data[1:] if row[0] == selected_cuenta]
+    else:
+        sectores_para_cuenta = []
     unique_sectores = sorted(set(sectores_para_cuenta))
     
     search_sector = st.text_input("Buscar en Sector de Riego:", key="buscar_sector")
@@ -125,13 +130,16 @@ def main():
     selected_sector = st.selectbox("Sector de Riego", ["Todos"] + filtered_sectores, key="sector")
 
     if st.button("Buscar Registro"):
-        rows = find_rows(selected_cuenta, selected_sector, data)
-        if not rows:
-            st.error("❌ No se encontró ninguna fila con los criterios seleccionados.")
-            st.session_state.rows = None
+        if selected_cuenta == "Seleccione una cuenta":
+            st.error("❌ Por favor, seleccione una cuenta válida.")
         else:
-            st.session_state.rows = rows
-            st.success(f"Actualizando: {len(rows)} fila(s).")
+            rows = find_rows(selected_cuenta, selected_sector, data)
+            if not rows:
+                st.error("❌ No se encontró ninguna fila con los criterios seleccionados.")
+                st.session_state.rows = None
+            else:
+                st.session_state.rows = rows
+                st.success(f"Actualizando: {len(rows)} fila(s).")
 
     if "rows" not in st.session_state:
         st.session_state.rows = None
