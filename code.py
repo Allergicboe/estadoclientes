@@ -33,8 +33,8 @@ def find_rows(selected_cuenta, selected_sector, data):
     """
     rows = []
     for i, row in enumerate(data[1:]):  # omite la fila de encabezado
-        match_cuenta = (selected_cuenta == "--Todos--" or row[0] == selected_cuenta)
-        match_sector = (selected_sector == "--Todos--" or row[1] == selected_sector)
+        match_cuenta = (selected_cuenta == "Todos" or row[0] == selected_cuenta)
+        match_sector = (selected_sector == "Todos" or row[1] == selected_sector)
         if match_cuenta and match_sector:
             rows.append(i + 2)  # +2: una por omitir encabezado y el índice empieza en 0
     return rows
@@ -58,7 +58,7 @@ def update_steps(rows, steps_updates, consultoria_value):
         for row in rows:
             cells_to_update.append(Cell(row, step_col, update_value))
             # Actualiza la fecha si el avance se indicó
-            if update_value in ['Sí', 'Programado', 'DropControl', 'CDTEC IF']:
+            if update_value in ['Sí', 'Programado', 'Sí (DropControl)', 'Sí (CDTEC IF)']:
                 cells_to_update.append(Cell(row, date_col, now))
             else:
                 cells_to_update.append(Cell(row, date_col, ''))
@@ -95,10 +95,10 @@ def main():
         filtered_cuentas = [c for c in unique_cuentas if search_cuenta.lower() in c.lower()]
     else:
         filtered_cuentas = unique_cuentas
-    selected_cuenta = st.selectbox("Cuenta", ["--Todos--"] + filtered_cuentas, key="cuenta")
+    selected_cuenta = st.selectbox("Cuenta", ["Todos"] + filtered_cuentas, key="cuenta")
 
     # --- Selección de Sector de Riego (filtrado por Cuenta) ---
-    if selected_cuenta != "--Todos--":
+    if selected_cuenta != "Todos":
         sectores_para_cuenta = [row[1] for row in data[1:] if row[0] == selected_cuenta]
     else:
         sectores_para_cuenta = [row[1] for row in data[1:]]
@@ -109,7 +109,7 @@ def main():
         filtered_sectores = [s for s in unique_sectores if search_sector.lower() in s.lower()]
     else:
         filtered_sectores = unique_sectores
-    selected_sector = st.selectbox("Sector de Riego", ["--Todos--"] + filtered_sectores, key="sector")
+    selected_sector = st.selectbox("Sector de Riego", ["Todos"] + filtered_sectores, key="sector")
 
     if st.button("Buscar Registro"):
         rows = find_rows(selected_cuenta, selected_sector, data)
@@ -118,7 +118,7 @@ def main():
             st.session_state.rows = None
         else:
             st.session_state.rows = rows
-            st.success(f"Se encontró(n) {len(rows)} fila(s).")
+            st.success(f"Actualizando: {len(rows)} fila(s).")
 
     if "rows" not in st.session_state:
         st.session_state.rows = None
@@ -144,7 +144,7 @@ def main():
                 "Ingreso a Planilla Clientes Nuevos": ['Sí', 'No'],
                 "Correo Presentación y Solicitud Información": ['Sí', 'No', 'Programado'],
                 "Agregar Puntos Críticos": ['Sí', 'No'],
-                "Generar Capacitación Plataforma": ['DropControl', 'CDTEC IF', 'No', 'Programado'],
+                "Generar Capacitación Plataforma": ['Sí (DropControl)', 'Sí (CDTEC IF)', 'No', 'Programado'],
                 "Generar Documento Power BI": ['Sí', 'No', 'Programado', 'No aplica'],
                 "Generar Capacitación Power BI": ['Sí', 'No', 'Programado', 'No aplica'],
                 "Generar Estrategia de Riego": ['Sí', 'No', 'Programado', 'No aplica']
