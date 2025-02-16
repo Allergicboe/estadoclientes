@@ -129,7 +129,7 @@ def main():
         selected_sector = "Todos"
 
     # --- Botón para Buscar Registro ---
-    if st.button("Buscar Registro", type="primary"):
+    if st.button("Buscar Registro", type="secondary"):
         if selected_cuenta == "Seleccione una cuenta":
             st.error("❌ Por favor, seleccione una cuenta válida.")
             st.session_state.rows = None
@@ -212,7 +212,7 @@ def main():
             comentarios_default = fila_datos[17] if len(fila_datos) >= 18 else ""
             comentarios_value = st.text_area("Comentarios", value=comentarios_default if comentarios_default is not None else "")
 
-            submitted = st.form_submit_button("Guardar Cambios")
+            submitted = st.form_submit_button("Guardar Cambios", type="primary")
             if submitted:
                 update_steps(st.session_state.rows, steps_updates, consultoria_value, comentarios_value)
 
