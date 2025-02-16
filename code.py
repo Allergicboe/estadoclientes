@@ -129,7 +129,7 @@ def main():
         selected_sector = "Todos"
 
     # --- Botón para Buscar Registro ---
-    if st.button("Buscar Registro"):
+    if st.button("Buscar Registro", type="primary"):
         if selected_cuenta == "Seleccione una cuenta":
             st.error("❌ Por favor, seleccione una cuenta válida.")
             st.session_state.rows = None
