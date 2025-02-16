@@ -79,13 +79,13 @@ def update_steps(rows, steps_updates, consultoria_value, comentarios_value):
 
     try:
         sheet.update_cells(cells_to_update, value_input_option='USER_ENTERED')
-        st.success("✅ Actualización completada correctamente.")
+        st.success("✅ Se guardaron los cambios correctamente.")
     except Exception as e:
         st.error(f"❌ Error en la actualización en batch: {e}")
 
 # --- FUNCIÓN PRINCIPAL CON INTERFAZ STREAMLIT ---
 def main():
-    st.title("🟢 Estado de Clientes")
+    st.title("📌 Estado de Clientes")
 
     # Obtener datos de la hoja
     data = get_data()
@@ -121,14 +121,14 @@ def main():
                 st.session_state.rows = None
             else:
                 st.session_state.rows = rows
-                st.success(f"Actualizando: {len(rows)} fila(s).")
+                st.success(f"Se actualizarán en el registro: {len(rows)} fila(s).")
 
     if "rows" not in st.session_state:
         st.session_state.rows = None
 
     # --- Mostrar el Formulario para Actualizar Datos solo si se obtuvo un registro ---
     if st.session_state.rows is not None:
-        st.header("Actualizar Datos")
+        st.header("Registro:")
         with st.form("update_form"):
             # 1. Consultoría (Columna C)
             consultoria_default = sheet.cell(st.session_state.rows[0], 3).value
@@ -193,7 +193,7 @@ def main():
                 "Comentarios", value=comentarios_default if comentarios_default is not None else ""
             )
 
-            submitted = st.form_submit_button("Actualizar")
+            submitted = st.form_submit_button("Guardar Cambios")
             if submitted:
                 update_steps(st.session_state.rows, steps_updates, consultoria_value, comentarios_value)
 
