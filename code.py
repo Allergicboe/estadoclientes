@@ -33,7 +33,6 @@ def find_rows(selected_cuenta, selected_sector, data):
     """
     rows = []
     for i, row in enumerate(data[1:]):  # omite la fila de encabezado
-        # Columna A (índice 0): Cuenta, Columna B (índice 1): Sector de Riego
         match_cuenta = (selected_cuenta == "--Todos--" or row[0] == selected_cuenta)
         match_sector = (selected_sector == "--Todos--" or row[1] == selected_sector)
         if match_cuenta and match_sector:
@@ -86,27 +85,35 @@ def main():
     if data is None:
         st.stop()
 
-    # Extraer valores únicos para "Cuenta" (columna A) y "Sector de Riego" (columna B)
+    # Extraer valores únicos para "Cuenta" (columna A)
     unique_cuentas = sorted(set(row[0] for row in data[1:]))
-    unique_sectores = sorted(set(row[1] for row in data[1:]))
 
     st.header("Buscar Registro")
-
+    
+    # --- Selección de Cuenta ---
     # Buscador y selector para "Cuenta"
-    search_cuenta = st.text_input("Buscar en Cuenta:")
+    search_cuenta = st.text_input("Buscar en Cuenta:", key="buscar_cuenta")
     if search_cuenta:
         filtered_cuentas = [c for c in unique_cuentas if search_cuenta.lower() in c.lower()]
     else:
         filtered_cuentas = unique_cuentas
-    selected_cuenta = st.selectbox("Cuenta", ["--Todos--"] + filtered_cuentas)
+    selected_cuenta = st.selectbox("Cuenta", ["--Todos--"] + filtered_cuentas, key="cuenta")
+
+    # --- Selección de Sector de Riego (filtrado por Cuenta) ---
+    # Filtrar los sectores según la cuenta seleccionada
+    if selected_cuenta != "--Todos--":
+        sectores_para_cuenta = [row[1] for row in data[1:] if row[0] == selected_cuenta]
+    else:
+        sectores_para_cuenta = [row[1] for row in data[1:]]
+    unique_sectores = sorted(set(sectores_para_cuenta))
 
     # Buscador y selector para "Sector de Riego"
-    search_sector = st.text_input("Buscar en Sector de Riego:")
+    search_sector = st.text_input("Buscar en Sector de Riego:", key="buscar_sector")
     if search_sector:
         filtered_sectores = [s for s in unique_sectores if search_sector.lower() in s.lower()]
     else:
         filtered_sectores = unique_sectores
-    selected_sector = st.selectbox("Sector de Riego", ["--Todos--"] + filtered_sectores)
+    selected_sector = st.selectbox("Sector de Riego", ["--Todos--"] + filtered_sectores, key="sector")
 
     if st.button("Buscar Registro"):
         rows = find_rows(selected_cuenta, selected_sector, data)
@@ -155,7 +162,8 @@ def main():
             }
 
             steps_updates = []
-            # Por cada paso, se crea un selectbox con su respectiva opción, tomando como valor por defecto el de la primera fila encontrada
+            # Por cada paso, se crea un selectbox con su respectiva opción,
+            # tomando como valor por defecto el de la primera fila encontrada
             for i, step in enumerate(steps_mapping):
                 step_label = step["step_label"]
                 default_val = sheet.cell(st.session_state.rows[0], step["step_col"]).value
