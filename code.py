@@ -112,22 +112,21 @@ def main():
     cuentas_options = ["Seleccione una cuenta"] + filtered_cuentas
     selected_cuenta = st.selectbox("Cuenta", cuentas_options, key="cuenta")
     
-    # --- Selección de Sector de Riego (filtrado por Cuenta) ---
-    # Se muestra el buscador de Sector de Riego únicamente si se ha seleccionado una cuenta válida
+    # --- Selección de Sector de Riego (solo si se ha seleccionado una cuenta válida) ---
     if selected_cuenta != "Seleccione una cuenta":
         sectores_para_cuenta = [row[1] for row in data[1:] if row[0] == selected_cuenta]
-    else:
-        sectores_para_cuenta = []
-    unique_sectores = sorted(set(sectores_para_cuenta))
+        unique_sectores = sorted(set(sectores_para_cuenta))
     
-    search_sector = st.text_input("Buscar en Sector de Riego:", key="buscar_sector")
-    if search_sector:
-        filtered_sectores = [s for s in unique_sectores if search_sector.lower() in s.lower()]
-    else:
-        filtered_sectores = unique_sectores
+        search_sector = st.text_input("Buscar en Sector de Riego:", key="buscar_sector")
+        if search_sector:
+            filtered_sectores = [s for s in unique_sectores if search_sector.lower() in s.lower()]
+        else:
+            filtered_sectores = unique_sectores
 
-    # Se agrega "Todos" en el buscador de sector para poder omitir este filtro si se desea
-    selected_sector = st.selectbox("Sector de Riego", ["Todos"] + filtered_sectores, key="sector")
+        # Se agrega "Todos" en el selector de sector para poder omitir este filtro si se desea
+        selected_sector = st.selectbox("Sector de Riego", ["Todos"] + filtered_sectores, key="sector")
+    else:
+        selected_sector = "Todos"  # Valor por defecto cuando no se ha seleccionado cuenta
 
     if st.button("Buscar Registro"):
         if selected_cuenta == "Seleccione una cuenta":
