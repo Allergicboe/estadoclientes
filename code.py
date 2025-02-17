@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import gspread
 from gspread import Cell
 from datetime import datetime
@@ -14,28 +15,26 @@ st.set_page_config(
 
 # --- BOTÓN PERMANENTE PARA ACCEDER A LA PLANILLA DE GOOGLE ---
 SPREADSHEET_URL = 'https://docs.google.com/spreadsheets/d/1d5kxv7lFE9ZZVSfCSvHAcxHuyjsXh8_Jr88btbfcKDM/edit?usp=drive_link'
-st.markdown(
-    f'''
-    <div style="text-align: center; margin-bottom: 20px;">
-        <a href="{SPREADSHEET_URL}" target="_blank">
-            <button style="
-                background-color: #4CAF50;
-                color: white;
-                border: none;
-                padding: 10px 20px;
-                text-align: center;
-                text-decoration: none;
-                display: inline-block;
-                font-size: 16px;
-                border-radius: 5px;
-                cursor: pointer;">
-                Abrir Planilla de Google
-            </button>
-        </a>
-    </div>
-    ''',
-    unsafe_allow_html=True
-)
+html_button = f"""
+<div style="text-align: center; margin-bottom: 20px;">
+    <a href="{SPREADSHEET_URL}" target="_blank">
+        <button style="
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;">
+            Abrir Planilla de Google
+        </button>
+    </a>
+</div>
+"""
+components.html(html_button, height=80)
 
 # Función para reiniciar la búsqueda (oculta "Registro:" si se cambia la cuenta o sector)
 def reset_search():
@@ -50,7 +49,6 @@ credentials = Credentials.from_service_account_info(
     st.secrets["gcp_service_account"], scopes=scope
 )
 gc = gspread.authorize(credentials)
-
 sheet = gc.open_by_url(SPREADSHEET_URL).sheet1
 
 # --- Función auxiliar para detectar errores por límite de API ---
