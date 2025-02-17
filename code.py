@@ -13,33 +13,6 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- BOTÓN PERMANENTE PARA ACCEDER A LA PLANILLA DE GOOGLE ---
-SPREADSHEET_URL = 'https://docs.google.com/spreadsheets/d/1d5kxv7lFE9ZZVSfCSvHAcxHuyjsXh8_Jr88btbfcKDM/edit?usp=drive_link'
-html_button = f"""
-<div style="text-align: center; margin-bottom: 20px;">
-    <a href="{SPREADSHEET_URL}" target="_blank">
-        <button style="
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            font-size: 16px;
-            border-radius: 5px;
-            cursor: pointer;">
-            Abrir Planilla de Google
-        </button>
-    </a>
-</div>
-"""
-components.html(html_button, height=80)
-
-# Función para reiniciar la búsqueda (oculta "Registro:" si se cambia la cuenta o sector)
-def reset_search():
-    st.session_state.rows = None
-
 # --- CONFIGURACIÓN DE LAS CREDENCIALES Y CONEXIÓN A GOOGLE SHEETS ---
 scope = [
     'https://www.googleapis.com/auth/spreadsheets',
@@ -49,7 +22,12 @@ credentials = Credentials.from_service_account_info(
     st.secrets["gcp_service_account"], scopes=scope
 )
 gc = gspread.authorize(credentials)
+SPREADSHEET_URL = 'https://docs.google.com/spreadsheets/d/1d5kxv7lFE9ZZVSfCSvHAcxHuyjsXh8_Jr88btbfcKDM/edit?usp=drive_link'
 sheet = gc.open_by_url(SPREADSHEET_URL).sheet1
+
+# Función para reiniciar la búsqueda (oculta "Registro:" si se cambia la cuenta o sector)
+def reset_search():
+    st.session_state.rows = None
 
 # --- Función auxiliar para detectar errores por límite de API ---
 def handle_quota_error(e):
@@ -124,7 +102,29 @@ def update_steps(rows, steps_updates, consultoria_value, comentarios_value):
 # --- FUNCIÓN PRINCIPAL CON INTERFAZ STREAMLIT ---
 def main():
     st.title("📌 Estado de Clientes")
-
+    
+    # --- BOTÓN PARA ACCEDER A LA PLANILLA DE GOOGLE (alineado a la izquierda) ---
+    html_button = f"""
+    <div style="text-align: left; margin-bottom: 20px;">
+        <a href="{SPREADSHEET_URL}" target="_blank">
+            <button style="
+                background-color: #4CAF50;
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                text-align: center;
+                text-decoration: none;
+                display: inline-block;
+                font-size: 16px;
+                border-radius: 5px;
+                cursor: pointer;">
+                Abrir Planilla de Google
+            </button>
+        </a>
+    </div>
+    """
+    components.html(html_button, height=80)
+    
     # Pre-cargar los datos de la hoja en session_state para evitar múltiples llamadas a la API
     if "data" not in st.session_state:
         st.session_state.data = get_data()
