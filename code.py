@@ -38,7 +38,7 @@ def load_sheet(client):
         st.error(f"Error al cargar la planilla: {str(e)}")
         return None
 
-spreadsheet_url = st.secrets["spreadsheet_url"]
+    SPREADSHEET_URL = st.secrets["spreadsheet_url"]
 
 # Función para reiniciar la búsqueda (oculta "Registro:" si se cambia la cuenta o sector)
 def reset_search():
