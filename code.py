@@ -3,9 +3,8 @@ import streamlit.components.v1 as components
 import gspread
 from gspread import Cell
 from datetime import datetime
-from google.oauth2 import service_account
-import os
-import json
+from google.oauth2.service_account import Credentials
+import time
 
 # Configuración de la página
 st.set_page_config(
@@ -14,97 +13,43 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- FUNCIÓN DE DEPURACIÓN ---
-def debug_secrets():
-    """Función para verificar si los secrets están correctamente configurados."""
-    try:
-        # Intentar acceder a los secrets y mostrar información de depuración
-        st.write("### Verificación de Secrets")
-        
-        # Comprobar si existe el secret spreadsheet_url
-        if "spreadsheet_url" in st.secrets:
-            st.success(f"✓ Secret 'spreadsheet_url' encontrado: {st.secrets.spreadsheet_url[:20]}...")
-        else:
-            st.error("✗ Secret 'spreadsheet_url' no encontrado")
-            
-        # Comprobar si existe la sección gcp_service_account
-        if "gcp_service_account" in st.secrets:
-            st.success("✓ Secret 'gcp_service_account' encontrado")
-            # Verificar las claves necesarias en gcp_service_account
-            required_keys = ["type", "project_id", "private_key_id", "private_key", 
-                            "client_email", "client_id", "auth_uri", "token_uri"]
-            missing_keys = [key for key in required_keys if key not in st.secrets.gcp_service_account]
-            
-            if missing_keys:
-                st.error(f"✗ Faltan las siguientes claves en gcp_service_account: {', '.join(missing_keys)}")
-            else:
-                st.success("✓ Todas las claves necesarias están presentes en gcp_service_account")
-        else:
-            st.error("✗ Secret 'gcp_service_account' no encontrado")
-            
-        return True
-    except Exception as e:
-        st.error(f"Error al verificar secrets: {str(e)}")
-        return False
+# --- BOTÓN PERMANENTE PARA ACCEDER A LA PLANILLA DE GOOGLE ---
+SPREADSHEET_URL = 'https://docs.google.com/spreadsheets/d/1d5kxv7lFE9ZZVSfCSvHAcxHuyjsXh8_Jr88btbfcKDM/edit?usp=drive_link'
+html_button = f"""
+<div style="text-align: center; margin-bottom: 20px;">
+    <a href="{SPREADSHEET_URL}" target="_blank">
+        <button style="
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;">
+            Abrir Planilla de Google
+        </button>
+    </a>
+</div>
+"""
+components.html(html_button, height=80)
 
-# --- CONFIGURACIÓN DE LAS CREDENCIALES Y CONEXIÓN A GOOGLE SHEETS ---
-def init_connection():
-    """Función para inicializar la conexión con Google Sheets."""
-    try:
-        # Verificar si existe la sección gcp_service_account en secrets
-        if "gcp_service_account" not in st.secrets:
-            st.error("No se encontró la sección 'gcp_service_account' en secrets")
-            st.info("El formato correcto de secrets.toml debería ser:")
-            st.code("""
-            spreadsheet_url = "https://docs.google.com/spreadsheets/d/..."
-            
-            [gcp_service_account]
-            type = "service_account"
-            project_id = "..."
-            private_key_id = "..."
-            private_key = "..."
-            client_email = "..."
-            client_id = "..."
-            auth_uri = "..."
-            token_uri = "..."
-            auth_provider_x509_cert_url = "..."
-            client_x509_cert_url = "..."
-            """)
-            return None
-            
-        # Convertir la estructura st.secrets.gcp_service_account a un diccionario
-        service_account_info = dict(st.secrets.gcp_service_account)
-        
-        # Obtener credenciales de secrets
-        credentials = service_account.Credentials.from_service_account_info(
-            service_account_info,
-            scopes=[
-                'https://www.googleapis.com/auth/spreadsheets',
-                'https://www.googleapis.com/auth/drive'
-            ]
-        )
-        client = gspread.authorize(credentials)
-        return client
-    except Exception as e:
-        st.error(f"Error en la conexión: {str(e)}")
-        return None
-
-def load_sheet(client):
-    """Función para cargar la hoja de trabajo de Google Sheets."""
-    try:
-        if "spreadsheet_url" not in st.secrets:
-            st.error("No se encontró 'spreadsheet_url' en secrets")
-            return None
-            
-        spreadsheet_url = st.secrets.spreadsheet_url
-        return client.open_by_url(spreadsheet_url).sheet1
-    except Exception as e:
-        st.error(f"Error al cargar la planilla: {str(e)}")
-        return None
-        
 # Función para reiniciar la búsqueda (oculta "Registro:" si se cambia la cuenta o sector)
 def reset_search():
     st.session_state.rows = None
+
+# --- CONFIGURACIÓN DE LAS CREDENCIALES Y CONEXIÓN A GOOGLE SHEETS ---
+scope = [
+    'https://www.googleapis.com/auth/spreadsheets',
+    'https://www.googleapis.com/auth/drive'
+]
+credentials = Credentials.from_service_account_info(
+    st.secrets["gcp_service_account"], scopes=scope
+)
+gc = gspread.authorize(credentials)
+sheet = gc.open_by_url(SPREADSHEET_URL).sheet1
 
 # --- Función auxiliar para detectar errores por límite de API ---
 def handle_quota_error(e):
@@ -179,29 +124,7 @@ def update_steps(rows, steps_updates, consultoria_value, comentarios_value):
 # --- FUNCIÓN PRINCIPAL CON INTERFAZ STREAMLIT ---
 def main():
     st.title("📌 Estado de Clientes")
-    
-    # --- BOTÓN PARA ACCEDER A LA PLANILLA DE GOOGLE (alineado a la izquierda) ---
-    html_button = f"""
-    <div style="text-align: left; margin-bottom: 20px;">
-        <a href="{spreadsheet_url}" target="_blank">
-            <button style="
-                background-color: #4CAF50;
-                color: white;
-                border: none;
-                padding: 10px 20px;
-                text-align: center;
-                text-decoration: none;
-                display: inline-block;
-                font-size: 16px;
-                border-radius: 5px;
-                cursor: pointer;">
-                Abrir Planilla de Google
-            </button>
-        </a>
-    </div>
-    """
-    components.html(html_button, height=80)
-    
+
     # Pre-cargar los datos de la hoja en session_state para evitar múltiples llamadas a la API
     if "data" not in st.session_state:
         st.session_state.data = get_data()
