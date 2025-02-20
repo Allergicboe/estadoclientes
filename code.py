@@ -38,8 +38,6 @@ def load_sheet(client):
         st.error(f"Error al cargar la planilla: {str(e)}")
         return None
 
-    SPREADSHEET_URL = st.secrets["spreadsheet_url"]
-
 # Función para reiniciar la búsqueda (oculta "Registro:" si se cambia la cuenta o sector)
 def reset_search():
     st.session_state.rows = None
@@ -119,6 +117,7 @@ def main():
     st.title("📌 Estado de Clientes")
     
     # --- BOTÓN PARA ACCEDER A LA PLANILLA DE GOOGLE (alineado a la izquierda) ---
+    SPREADSHEET_URL = st.secrets["spreadsheet_url"]
     html_button = f"""
     <div style="text-align: left; margin-bottom: 20px;">
         <a href="{spreadsheet_url}" target="_blank">
