@@ -19,30 +19,14 @@ st.set_page_config(
 def init_connection():
     """Función para inicializar la conexión con Google Sheets."""
     try:
-        # Check if we're using secrets or environment variables
-        if st.secrets.get("gcp_service_account"):
-            credentials = service_account.Credentials.from_service_account_info(
-                st.secrets["gcp_service_account"],
-                scopes=[
-                    'https://www.googleapis.com/auth/spreadsheets',
-                    'https://www.googleapis.com/auth/drive'
-                ]
-            )
-        else:
-            # Fallback to environment variables or local JSON file
-            service_account_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS', 'service_account.json')
-            if os.path.exists(service_account_path):
-                credentials = service_account.Credentials.from_service_account_file(
-                    service_account_path,
-                    scopes=[
-                        'https://www.googleapis.com/auth/spreadsheets',
-                        'https://www.googleapis.com/auth/drive'
-                    ]
-                )
-            else:
-                st.error("No se encontraron credenciales de Google. Configure st.secrets['gcp_service_account'] o proporcione un archivo service_account.json")
-                return None
-                
+        # Usar directamente los secretos de Streamlit como en el código de georreferenciación
+        credentials = service_account.Credentials.from_service_account_info(
+            st.secrets["gcp_service_account"],
+            scopes=[
+                'https://www.googleapis.com/auth/spreadsheets',
+                'https://www.googleapis.com/auth/drive'
+            ]
+        )
         client = gspread.authorize(credentials)
         return client
     except Exception as e:
@@ -52,18 +36,8 @@ def init_connection():
 def load_sheet(client):
     """Función para cargar la hoja de trabajo de Google Sheets."""
     try:
-        # Obtener URL desde secrets (formato correcto)
-        spreadsheet_url = ""
-        if hasattr(st, "secrets") and "spreadsheet_url" in st.secrets:
-            spreadsheet_url = st.secrets["spreadsheet_url"]
-        else:
-            spreadsheet_url = os.getenv('SPREADSHEET_URL', '')
-        
-        if not spreadsheet_url:
-            st.warning("⚠️ URL de la planilla no configurada. Por favor configure st.secrets['spreadsheet_url'] o la variable de entorno SPREADSHEET_URL")
-            return None
-            
-        return client.open_by_url(spreadsheet_url).sheet1
+        # Obtener URL directamente de los secretos como en el código de georreferenciación
+        return client.open_by_url(st.secrets["spreadsheet_url"]).sheet1
     except Exception as e:
         st.error(f"Error al cargar la planilla: {str(e)}")
         return None
@@ -75,11 +49,8 @@ spreadsheet_url = ""
 
 if client:
     sheet = load_sheet(client)
-    # Almacenar la URL de la planilla para el botón
-    if hasattr(st, "secrets") and "spreadsheet_url" in st.secrets:
-        spreadsheet_url = st.secrets["spreadsheet_url"]
-    else:
-        spreadsheet_url = os.getenv('SPREADSHEET_URL', '#')
+    # Almacenar la URL de la planilla para el botón, directamente desde secrets
+    spreadsheet_url = st.secrets["spreadsheet_url"]
 
 # Función para reiniciar la búsqueda (oculta "Registro:" si se cambia la cuenta o sector)
 def reset_search():
@@ -175,12 +146,10 @@ def main():
         Para usar esta aplicación, necesita configurar:
         
         1. Credenciales de Google Cloud:
-           - Configure `st.secrets["gcp_service_account"]` o 
-           - Proporcione un archivo `service_account.json` en el directorio raíz
+           - Configure `st.secrets["gcp_service_account"]`
         
         2. URL de Google Sheets:
-           - Configure `st.secrets["spreadsheet_url"]` o
-           - Establezca la variable de entorno `SPREADSHEET_URL`
+           - Configure `st.secrets["spreadsheet_url"]`
         
         Para más información sobre la configuración de secretos en Streamlit, visite: https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/secrets-management
         """)
