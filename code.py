@@ -14,16 +14,29 @@ st.set_page_config(
 )
 
 # --- CONFIGURACIÓN DE LAS CREDENCIALES Y CONEXIÓN A GOOGLE SHEETS ---
-scope = [
-    'https://www.googleapis.com/auth/spreadsheets',
-    'https://www.googleapis.com/auth/drive'
-]
-credentials = Credentials.from_service_account_info(
-    st.secrets["gcp_service_account"], scopes=scope
-)
-gc = gspread.authorize(credentials)
-SPREADSHEET_URL = 'https://docs.google.com/spreadsheets/d/1d5kxv7lFE9ZZVSfCSvHAcxHuyjsXh8_Jr88btbfcKDM/edit?usp=drive_link'
-sheet = gc.open_by_url(SPREADSHEET_URL).sheet1
+def init_connection():
+    """Función para inicializar la conexión con Google Sheets."""
+    try:
+        credentials = service_account.Credentials.from_service_account_info(
+            st.secrets["gcp_service_account"],
+            scopes=[
+                'https://www.googleapis.com/auth/spreadsheets',
+                'https://www.googleapis.com/auth/drive'
+            ]
+        )
+        client = gspread.authorize(credentials)
+        return client
+    except Exception as e:
+        st.error(f"Error en la conexión: {str(e)}")
+        return None
+
+def load_sheet(client):
+    """Función para cargar la hoja de trabajo de Google Sheets."""
+    try:
+        return client.open_by_url(st.secrets["spreadsheet_url"]).sheet1
+    except Exception as e:
+        st.error(f"Error al cargar la planilla: {str(e)}")
+        return None
 
 # Función para reiniciar la búsqueda (oculta "Registro:" si se cambia la cuenta o sector)
 def reset_search():
@@ -106,7 +119,7 @@ def main():
     # --- BOTÓN PARA ACCEDER A LA PLANILLA DE GOOGLE (alineado a la izquierda) ---
     html_button = f"""
     <div style="text-align: left; margin-bottom: 20px;">
-        <a href="{SPREADSHEET_URL}" target="_blank">
+        <a href="{spreadsheet_url}" target="_blank">
             <button style="
                 background-color: #4CAF50;
                 color: white;
