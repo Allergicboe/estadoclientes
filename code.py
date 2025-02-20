@@ -16,28 +16,6 @@ st.set_page_config(
 # --- EXTRACCIÓN DE DATOS SENSIBLES DESDE secrets.toml ---
 SPREADSHEET_URL = st.secrets["spreadsheet_url"]
 
-# --- BOTÓN PERMANENTE PARA ACCEDER A LA PLANILLA DE GOOGLE ---
-html_button = f"""
-<div style="text-align: center; margin-bottom: 20px;">
-    <a href="{SPREADSHEET_URL}" target="_blank">
-        <button style="
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            font-size: 16px;
-            border-radius: 5px;
-            cursor: pointer;">
-            Abrir Planilla de Google
-        </button>
-    </a>
-</div>
-"""
-components.html(html_button, height=80)
-
 # Función para reiniciar la búsqueda (oculta "Registro:" si se cambia la cuenta o sector)
 def reset_search():
     st.session_state.rows = None
@@ -126,6 +104,28 @@ def update_steps(rows, steps_updates, consultoria_value, comentarios_value):
 # --- FUNCIÓN PRINCIPAL CON INTERFAZ STREAMLIT ---
 def main():
     st.title("📌 Estado de Clientes")
+    
+    # BOTÓN "Abrir Planilla de Google" más pequeño, alineado a la izquierda y justo debajo del título
+    html_button = f"""
+    <div style="text-align: left; margin-bottom: 10px;">
+        <a href="{SPREADSHEET_URL}" target="_blank">
+            <button style="
+                background-color: #4CAF50;
+                color: white;
+                border: none;
+                padding: 5px 10px;
+                text-align: center;
+                text-decoration: none;
+                display: inline-block;
+                font-size: 14px;
+                border-radius: 5px;
+                cursor: pointer;">
+                Abrir Planilla de Google
+            </button>
+        </a>
+    </div>
+    """
+    components.html(html_button, height=50)
 
     # Pre-cargar los datos de la hoja en session_state para evitar múltiples llamadas a la API
     if "data" not in st.session_state:
