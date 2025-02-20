@@ -20,7 +20,7 @@ def init_connection():
     """Función para inicializar la conexión con Google Sheets."""
     try:
         # Check if we're using secrets or environment variables
-        if "gcp_service_account" in st.secrets:
+        if st.secrets.get("gcp_service_account"):
             credentials = service_account.Credentials.from_service_account_info(
                 st.secrets["gcp_service_account"],
                 scopes=[
@@ -52,8 +52,12 @@ def init_connection():
 def load_sheet(client):
     """Función para cargar la hoja de trabajo de Google Sheets."""
     try:
-        # Try to get spreadsheet URL from secrets, or use a development URL
-        spreadsheet_url = st.secrets.get("spreadsheet_url", os.getenv('SPREADSHEET_URL', ''))
+        # Obtener URL desde secrets (formato correcto)
+        spreadsheet_url = ""
+        if hasattr(st, "secrets") and "spreadsheet_url" in st.secrets:
+            spreadsheet_url = st.secrets["spreadsheet_url"]
+        else:
+            spreadsheet_url = os.getenv('SPREADSHEET_URL', '')
         
         if not spreadsheet_url:
             st.warning("⚠️ URL de la planilla no configurada. Por favor configure st.secrets['spreadsheet_url'] o la variable de entorno SPREADSHEET_URL")
@@ -72,11 +76,15 @@ spreadsheet_url = ""
 if client:
     sheet = load_sheet(client)
     # Almacenar la URL de la planilla para el botón
-    spreadsheet_url = st.secrets.get("spreadsheet_url", os.getenv('SPREADSHEET_URL', '#'))
+    if hasattr(st, "secrets") and "spreadsheet_url" in st.secrets:
+        spreadsheet_url = st.secrets["spreadsheet_url"]
+    else:
+        spreadsheet_url = os.getenv('SPREADSHEET_URL', '#')
 
 # Función para reiniciar la búsqueda (oculta "Registro:" si se cambia la cuenta o sector)
 def reset_search():
-    st.session_state.rows = None
+    if "rows" in st.session_state:
+        st.session_state.rows = None
 
 # --- Función auxiliar para detectar errores por límite de API ---
 def handle_quota_error(e):
@@ -203,6 +211,7 @@ def main():
     # Pre-cargar los datos de la hoja en session_state para evitar múltiples llamadas a la API
     if "data" not in st.session_state:
         st.session_state.data = get_data()
+    
     data = st.session_state.data
 
     if data is None:
@@ -247,74 +256,77 @@ def main():
         st.header("Registro:")
         # Se utiliza la información precargada para extraer los valores de la fila
         fila_index = st.session_state.rows[0] - 1  # Ajuste por índice (lista base 0)
-        fila_datos = data[fila_index]
+        if fila_index < len(data):
+            fila_datos = data[fila_index]
 
-        with st.form("update_form"):
-            # 1. Consultoría (Columna C, índice 2)
-            consultoria_default = fila_datos[2] if len(fila_datos) >= 3 else ""
-            display_consultoria = consultoria_default.strip() if consultoria_default and consultoria_default.strip() != "" else "Vacío"
-            consultoria_options = ["Sí", "No"]
-            if display_consultoria not in consultoria_options:
-                consultoria_options = [display_consultoria] + consultoria_options
-            try:
-                consultoria_index = consultoria_options.index(display_consultoria)
-            except ValueError:
-                consultoria_index = 0
-            consultoria_value = st.selectbox("Consultoría", options=consultoria_options, index=consultoria_index)
-
-            # 2. Pasos a actualizar (según el orden indicado)
-            steps_mapping = [
-                {"step_label": "Ingreso a Planilla Clientes Nuevos", "step_col": 4, "date_col": 5},
-                {"step_label": "Correo Presentación y Solicitud Información", "step_col": 6, "date_col": 7},
-                {"step_label": "Agregar Puntos Críticos", "step_col": 8, "date_col": 9},
-                {"step_label": "Generar Capacitación Plataforma", "step_col": 10, "date_col": 11},
-                {"step_label": "Generar Documento Power BI", "step_col": 12, "date_col": 13},
-                {"step_label": "Generar Capacitación Power BI", "step_col": 14, "date_col": 15},
-                {"step_label": "Generar Estrategia de Riego", "step_col": 16, "date_col": 17},
-            ]
-            step_options = {
-                "Ingreso a Planilla Clientes Nuevos": ['Sí', 'No'],
-                "Correo Presentación y Solicitud Información": ['Sí', 'No', 'Programado'],
-                "Agregar Puntos Críticos": ['Sí', 'No'],
-                "Generar Capacitación Plataforma": ['Sí (DropControl)', 'Sí (CDTEC IF)', 'No', 'Programado'],
-                "Generar Documento Power BI": ['Sí', 'No', 'Programado', 'No aplica'],
-                "Generar Capacitación Power BI": ['Sí', 'No', 'Programado', 'No aplica'],
-                "Generar Estrategia de Riego": ['Sí', 'No', 'Programado', 'No aplica']
-            }
-            steps_updates = []
-            for i, step in enumerate(steps_mapping):
-                step_label = step["step_label"]
-                # Se obtiene el valor de la celda usando la información precargada (ajuste índice base 0)
-                col_index = step["step_col"] - 1
-                default_val = fila_datos[col_index] if len(fila_datos) > col_index else ""
-                display_val = default_val.strip() if default_val and default_val.strip() != "" else "Vacío"
-                options_for_select = step_options[step_label].copy()
-                if display_val not in options_for_select:
-                    options_for_select = [display_val] + options_for_select
+            with st.form("update_form"):
+                # 1. Consultoría (Columna C, índice 2)
+                consultoria_default = fila_datos[2] if len(fila_datos) >= 3 else ""
+                display_consultoria = consultoria_default.strip() if consultoria_default and consultoria_default.strip() != "" else "Vacío"
+                consultoria_options = ["Sí", "No"]
+                if display_consultoria not in consultoria_options + ["Vacío"]:
+                    consultoria_options = [display_consultoria] + consultoria_options
                 try:
-                    default_index = options_for_select.index(display_val)
+                    consultoria_index = consultoria_options.index(display_consultoria)
                 except ValueError:
-                    default_index = 0
-                selected_val = st.selectbox(
-                    step_label,
-                    options=options_for_select,
-                    index=default_index,
-                    key=f"step_{i}"
-                )
-                steps_updates.append({
-                    "step_label": step_label,
-                    "step_col": step["step_col"],
-                    "date_col": step["date_col"],
-                    "value": selected_val
-                })
+                    consultoria_index = 0
+                consultoria_value = st.selectbox("Consultoría", options=consultoria_options, index=consultoria_index)
 
-            # 3. Comentarios (Columna R, índice 17)
-            comentarios_default = fila_datos[17] if len(fila_datos) >= 18 else ""
-            comentarios_value = st.text_area("Comentarios", value=comentarios_default if comentarios_default is not None else "")
+                # 2. Pasos a actualizar (según el orden indicado)
+                steps_mapping = [
+                    {"step_label": "Ingreso a Planilla Clientes Nuevos", "step_col": 4, "date_col": 5},
+                    {"step_label": "Correo Presentación y Solicitud Información", "step_col": 6, "date_col": 7},
+                    {"step_label": "Agregar Puntos Críticos", "step_col": 8, "date_col": 9},
+                    {"step_label": "Generar Capacitación Plataforma", "step_col": 10, "date_col": 11},
+                    {"step_label": "Generar Documento Power BI", "step_col": 12, "date_col": 13},
+                    {"step_label": "Generar Capacitación Power BI", "step_col": 14, "date_col": 15},
+                    {"step_label": "Generar Estrategia de Riego", "step_col": 16, "date_col": 17},
+                ]
+                step_options = {
+                    "Ingreso a Planilla Clientes Nuevos": ['Sí', 'No'],
+                    "Correo Presentación y Solicitud Información": ['Sí', 'No', 'Programado'],
+                    "Agregar Puntos Críticos": ['Sí', 'No'],
+                    "Generar Capacitación Plataforma": ['Sí (DropControl)', 'Sí (CDTEC IF)', 'No', 'Programado'],
+                    "Generar Documento Power BI": ['Sí', 'No', 'Programado', 'No aplica'],
+                    "Generar Capacitación Power BI": ['Sí', 'No', 'Programado', 'No aplica'],
+                    "Generar Estrategia de Riego": ['Sí', 'No', 'Programado', 'No aplica']
+                }
+                steps_updates = []
+                for i, step in enumerate(steps_mapping):
+                    step_label = step["step_label"]
+                    # Se obtiene el valor de la celda usando la información precargada (ajuste índice base 0)
+                    col_index = step["step_col"] - 1
+                    default_val = fila_datos[col_index] if len(fila_datos) > col_index else ""
+                    display_val = default_val.strip() if default_val and default_val.strip() != "" else "Vacío"
+                    options_for_select = step_options[step_label].copy()
+                    if display_val not in options_for_select + ["Vacío"]:
+                        options_for_select = [display_val] + options_for_select
+                    try:
+                        default_index = options_for_select.index(display_val)
+                    except ValueError:
+                        default_index = 0
+                    selected_val = st.selectbox(
+                        step_label,
+                        options=options_for_select,
+                        index=default_index,
+                        key=f"step_{i}"
+                    )
+                    steps_updates.append({
+                        "step_label": step_label,
+                        "step_col": step["step_col"],
+                        "date_col": step["date_col"],
+                        "value": selected_val
+                    })
 
-            submitted = st.form_submit_button("Guardar Cambios", type="primary")
-            if submitted:
-                update_steps(st.session_state.rows, steps_updates, consultoria_value, comentarios_value)
+                # 3. Comentarios (Columna R, índice 17)
+                comentarios_default = fila_datos[17] if len(fila_datos) >= 18 else ""
+                comentarios_value = st.text_area("Comentarios", value=comentarios_default if comentarios_default is not None else "")
+
+                submitted = st.form_submit_button("Guardar Cambios", type="primary")
+                if submitted:
+                    update_steps(st.session_state.rows, steps_updates, consultoria_value, comentarios_value)
+        else:
+            st.error("❌ Error: No se pudo encontrar los datos de la fila seleccionada.")
 
 if __name__ == "__main__":
     main()
