@@ -13,8 +13,10 @@ st.set_page_config(
     layout="wide"
 )
 
+# --- EXTRACCIÓN DE DATOS SENSIBLES DESDE secrets.toml ---
+SPREADSHEET_URL = st.secrets["spreadsheet_url"]
+
 # --- BOTÓN PERMANENTE PARA ACCEDER A LA PLANILLA DE GOOGLE ---
-SPREADSHEET_URL = 'https://docs.google.com/spreadsheets/d/1d5kxv7lFE9ZZVSfCSvHAcxHuyjsXh8_Jr88btbfcKDM/edit?usp=drive_link'
 html_button = f"""
 <div style="text-align: center; margin-bottom: 20px;">
     <a href="{SPREADSHEET_URL}" target="_blank">
