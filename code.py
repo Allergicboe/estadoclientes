@@ -3,9 +3,7 @@ import streamlit.components.v1 as components
 import gspread
 from gspread import Cell
 from datetime import datetime
-from google.oauth2.service_account import Credentials
 from google.oauth2 import service_account
-import time
 import os
 
 # Configuración de la página
@@ -15,45 +13,18 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- CONFIGURACIÓN GLOBAL ---
-# Variable para almacenar la URL de la planilla
-spreadsheet_url = ""
-
-# Intenta obtener la URL del spreadsheet desde diferentes fuentes
-if hasattr(st, "secrets") and "spreadsheet_url" in st.secrets:
-    spreadsheet_url = st.secrets["spreadsheet_url"]
-else:
-    # Fallback a variable de entorno
-    spreadsheet_url = os.getenv('SPREADSHEET_URL', '')
-
 # --- CONFIGURACIÓN DE LAS CREDENCIALES Y CONEXIÓN A GOOGLE SHEETS ---
 def init_connection():
     """Función para inicializar la conexión con Google Sheets."""
     try:
-        # Intenta obtener credenciales desde secrets
-        if hasattr(st, "secrets") and "gcp_service_account" in st.secrets:
-            credentials = service_account.Credentials.from_service_account_info(
-                st.secrets["gcp_service_account"],
-                scopes=[
-                    'https://www.googleapis.com/auth/spreadsheets',
-                    'https://www.googleapis.com/auth/drive'
-                ]
-            )
-        else:
-            # Fallback a archivo local o variable de entorno
-            service_account_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS', 'service_account.json')
-            if os.path.exists(service_account_path):
-                credentials = service_account.Credentials.from_service_account_file(
-                    service_account_path,
-                    scopes=[
-                        'https://www.googleapis.com/auth/spreadsheets',
-                        'https://www.googleapis.com/auth/drive'
-                    ]
-                )
-            else:
-                st.error("❌ No se encontraron credenciales de Google. Configure st.secrets['gcp_service_account'] o proporcione un archivo service_account.json")
-                return None
-                
+        # Obtener credenciales de secrets
+        credentials = service_account.Credentials.from_service_account_info(
+            st.secrets["gcp_service_account"],
+            scopes=[
+                'https://www.googleapis.com/auth/spreadsheets',
+                'https://www.googleapis.com/auth/drive'
+            ]
+        )
         client = gspread.authorize(credentials)
         return client
     except Exception as e:
@@ -62,12 +33,8 @@ def init_connection():
 
 def load_sheet(client):
     """Función para cargar la hoja de trabajo de Google Sheets."""
-    global spreadsheet_url
     try:
-        if not spreadsheet_url:
-            st.warning("⚠️ URL de la planilla no configurada. Por favor configure st.secrets['spreadsheet_url'] o la variable de entorno SPREADSHEET_URL")
-            return None
-            
+        spreadsheet_url = st.secrets["spreadsheet_url"]
         return client.open_by_url(spreadsheet_url).sheet1
     except Exception as e:
         st.error(f"Error al cargar la planilla: {str(e)}")
@@ -80,21 +47,13 @@ sheet = None
 if client:
     sheet = load_sheet(client)
 
-# Función para reiniciar la búsqueda (oculta "Registro:" si se cambia la cuenta o sector)
+# Función para reiniciar la búsqueda
 def reset_search():
     if "rows" in st.session_state:
         st.session_state.rows = None
 
-# --- Función auxiliar para detectar errores por límite de API ---
-def handle_quota_error(e):
-    error_str = str(e).lower()
-    if "quota" in error_str or "limit" in error_str:
-        st.error("❌ Se ha alcanzado el límite de API de Google. Reiniciando la aplicación...")
-        time.sleep(1)
-        st.experimental_rerun()
-
 # --- FUNCIÓN PARA OBTENER LOS DATOS DE LA HOJA (con cacheo) ---
-@st.cache_data(ttl=60)  # Cachea los datos por 60 segundos para reducir llamadas a la API
+@st.cache_data(ttl=60)
 def get_data():
     if sheet is None:
         st.error("❌ No se ha podido establecer conexión con Google Sheets.")
@@ -103,7 +62,6 @@ def get_data():
     try:
         return sheet.get_all_values()
     except Exception as e:
-        handle_quota_error(e)
         st.error(f"❌ Error al obtener los datos: {e}")
         return None
 
@@ -160,8 +118,7 @@ def update_steps(rows, steps_updates, consultoria_value, comentarios_value):
         sheet.update_cells(cells_to_update, value_input_option='USER_ENTERED')
         st.success("✅ Se guardaron los cambios correctamente.")
     except Exception as e:
-        handle_quota_error(e)
-        st.error(f"❌ Error en la actualización en batch: {e}")
+        st.error(f"❌ Error en la actualización: {e}")
 
 # --- FUNCIÓN PRINCIPAL CON INTERFAZ STREAMLIT ---
 def main():
@@ -174,43 +131,39 @@ def main():
         Para usar esta aplicación, necesita configurar:
         
         1. Credenciales de Google Cloud:
-           - Configure `st.secrets["gcp_service_account"]` o 
-           - Proporcione un archivo `service_account.json` en el directorio raíz
+           - Configure `st.secrets["gcp_service_account"]`
         
         2. URL de Google Sheets:
-           - Configure `st.secrets["spreadsheet_url"]` o
-           - Establezca la variable de entorno `SPREADSHEET_URL`
+           - Configure `st.secrets["spreadsheet_url"]`
         
         Para más información sobre la configuración de secretos en Streamlit, visite: https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/secrets-management
         """)
         return
     
-    # --- BOTÓN PARA ACCEDER A LA PLANILLA DE GOOGLE (alineado a la izquierda) ---
-    if spreadsheet_url:
-        html_button = f"""
-        <div style="text-align: left; margin-bottom: 20px;">
-            <a href="{spreadsheet_url}" target="_blank">
-                <button style="
-                    background-color: #4CAF50;
-                    color: white;
-                    border: none;
-                    padding: 10px 20px;
-                    text-align: center;
-                    text-decoration: none;
-                    display: inline-block;
-                    font-size: 16px;
-                    border-radius: 5px;
-                    cursor: pointer;">
-                    Abrir Planilla de Google
-                </button>
-            </a>
-        </div>
-        """
-        components.html(html_button, height=80)
-    else:
-        st.warning("⚠️ No se puede mostrar el enlace a la planilla porque la URL no está configurada.")
+    # --- BOTÓN PARA ACCEDER A LA PLANILLA DE GOOGLE ---
+    spreadsheet_url = st.secrets["spreadsheet_url"]
+    html_button = f"""
+    <div style="text-align: left; margin-bottom: 20px;">
+        <a href="{spreadsheet_url}" target="_blank">
+            <button style="
+                background-color: #4CAF50;
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                text-align: center;
+                text-decoration: none;
+                display: inline-block;
+                font-size: 16px;
+                border-radius: 5px;
+                cursor: pointer;">
+                Abrir Planilla de Google
+            </button>
+        </a>
+    </div>
+    """
+    components.html(html_button, height=80)
     
-    # Pre-cargar los datos de la hoja en session_state para evitar múltiples llamadas a la API
+    # Pre-cargar los datos de la hoja en session_state
     if "data" not in st.session_state:
         st.session_state.data = get_data()
     
@@ -224,11 +177,11 @@ def main():
 
     st.header("Buscar Registro")
     
-    # --- Selección de Cuenta (se reinicia la búsqueda si se cambia) ---
+    # --- Selección de Cuenta ---
     cuentas_options = ["Seleccione una cuenta"] + unique_cuentas
     selected_cuenta = st.selectbox("Cuenta", cuentas_options, key="cuenta", on_change=reset_search)
     
-    # --- Selección de Sector de Riego (solo si se ha seleccionado una cuenta válida) ---
+    # --- Selección de Sector de Riego ---
     if selected_cuenta != "Seleccione una cuenta":
         sectores_para_cuenta = [row[1] for row in data[1:] if row[0] == selected_cuenta]
         unique_sectores = sorted(set(sectores_para_cuenta))
@@ -296,7 +249,7 @@ def main():
                 steps_updates = []
                 for i, step in enumerate(steps_mapping):
                     step_label = step["step_label"]
-                    # Se obtiene el valor de la celda usando la información precargada (ajuste índice base 0)
+                    # Se obtiene el valor de la celda usando la información precargada
                     col_index = step["step_col"] - 1
                     default_val = fila_datos[col_index] if len(fila_datos) > col_index else ""
                     display_val = default_val.strip() if default_val and default_val.strip() != "" else "Vacío"
