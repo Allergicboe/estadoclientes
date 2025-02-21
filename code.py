@@ -62,7 +62,7 @@ def find_rows(selected_cuenta, selected_sectores, data):
 
 # Actualizar celdas
 def update_steps(rows, steps_updates, consultoria_value, comentarios_value):
-    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    now = datetime.now().strftime('%d-%m-%Y %H:%M')
     cells_to_update = []
 
     # Actualizar Consultoría
