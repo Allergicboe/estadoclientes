@@ -365,7 +365,7 @@ def main():
         html_comentarios = f"""
         <style>
         .comments-container {{
-            max-height: 150px;  # <-- Altura fija
+            max-height: 20px;  # <-- Altura fija
             overflow-y: auto;
             margin-bottom: 25px;
         }}
