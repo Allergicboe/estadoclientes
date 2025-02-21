@@ -239,7 +239,7 @@ def main():
                   "Ingreso a Planilla", "Correo Presentación", 
                   "Puntos Críticos", "Capacitación Plataforma", 
                   "Documento Power BI", "Capacitación Power BI", 
-                  "Estrategia de Riego"]
+                  "Estrategia de Riego", "Última Actualización"]
         
         for row_index in st.session_state.rows:
             row = data[row_index - 1]  # Ajuste de índice
@@ -254,6 +254,7 @@ def main():
                 row[11], # Documento Power BI
                 row[13], # Capacitación Power BI
                 row[15], # Estrategia de Riego
+                row[18] if len(row) > 18 else "",  # Última Actualización (columna S)
             ]
             table_data.append(row_data)
         
@@ -293,6 +294,10 @@ def main():
             width: 90%;
             text-align: center;
         }}
+        .date-cell {{
+            font-size: 0.85em;
+            color: #333;
+        }}
         </style>
         <div style="max-height: {table_height}px; overflow-y: auto;">
         <table class="status-table">
@@ -316,6 +321,8 @@ def main():
             for i, cell in enumerate(row):
                 if i <= 1:  # Cuenta y Sector sin formato
                     html_table += f"<td>{cell}</td>"
+                elif i == len(row) - 1:  # Última columna (fecha de actualización)
+                    html_table += f'<td><div class="date-cell">{cell}</div></td>'
                 else:
                     cell_value = cell if cell and cell.strip() != "" else "Vacío"
                     color = get_state_color(cell_value)
