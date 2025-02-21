@@ -253,7 +253,7 @@ def main():
         
         # Altura tabla estado cliente
         min_rows = max(1, len(table_data))
-        table_height = min(2000, max(100, min_rows * 40 + 50))
+        table_height = min(2000, max(200, min_rows * 40 + 50))
         
         # Crear tabla HTML con colores y fuente predeterminada de Streamlit
         html_table = f"""
