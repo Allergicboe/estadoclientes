@@ -361,15 +361,19 @@ def main():
         # Ordenar sectores alfabéticamente
         sectores_encontrados = sorted(set(sectores_encontrados))
         
-        # Crear tabla HTML para comentarios
+        # Crear tabla HTML para comentarios - ALTURA FIJA
         html_comentarios = f"""
         <style>
+        .comments-container {{
+            max-height: {table_height}px;
+            overflow-y: auto;
+            margin-bottom: 25px;
+        }}
         .comments-table {{
             width: 100%;
             border-collapse: collapse;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
             margin-top: 15px;
-            margin-bottom: 25px;
         }}
         .comments-table th, .comments-table td {{
             border: 1px solid #ddd;
@@ -379,6 +383,9 @@ def main():
             background-color: #f2f2f2;
             text-align: center;
             font-weight: bold;
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }}
         .comments-table td {{
             text-align: left;
@@ -386,6 +393,7 @@ def main():
             background-color: #f9f9f9;
         }}
         </style>
+        <div class="comments-container">
         <table class="comments-table">
             <thead>
                 <tr>
@@ -411,11 +419,11 @@ def main():
                 </tr>
             </tbody>
         </table>
+        </div>
         """
         
-        # Mostrar tabla de comentarios
-        comments_height = max(150, min(350, len(sectores_encontrados) * 50))
-        st.components.v1.html(html_comentarios, height=comments_height)
+        # Mostrar tabla de comentarios con la misma altura que la tabla de estado
+        st.components.v1.html(html_comentarios, height=table_height + 20)  # +20 para margen
 
         # Mostrar formulario de actualización
         st.header("Actualizar Registro")
