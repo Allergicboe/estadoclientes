@@ -5,6 +5,7 @@ from gspread import Cell
 from datetime import datetime
 from google.oauth2.service_account import Credentials
 import time
+import pandas as pd
 
 # Configuración de la página
 st.set_page_config(
@@ -13,14 +14,14 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- EXTRACCIÓN DE DATOS SENSIBLES DESDE secrets.toml ---
+# Configuración: URL de la hoja de cálculo
 SPREADSHEET_URL = st.secrets["spreadsheet_url"]
 
-# Función para reiniciar la búsqueda (oculta "Registro:" si se cambia la cuenta o sector)
+# Función para reiniciar la búsqueda
 def reset_search():
     st.session_state.rows = None
 
-# --- CONFIGURACIÓN DE LAS CREDENCIALES Y CONEXIÓN A GOOGLE SHEETS ---
+# Configuración de credenciales
 scope = [
     'https://www.googleapis.com/auth/spreadsheets',
     'https://www.googleapis.com/auth/drive'
@@ -31,46 +32,46 @@ credentials = Credentials.from_service_account_info(
 gc = gspread.authorize(credentials)
 sheet = gc.open_by_url(SPREADSHEET_URL).sheet1
 
-# --- Función auxiliar para detectar errores por límite de API ---
+# Manejo de errores de API
 def handle_quota_error(e):
     error_str = str(e).lower()
     if "quota" in error_str or "limit" in error_str:
-        st.error("❌ Se ha alcanzado el límite de API de Google. Reiniciando la aplicación...")
+        st.error("❌ Límite de API alcanzado. Reiniciando...")
         time.sleep(1)
         st.experimental_rerun()
 
-# --- FUNCIÓN PARA OBTENER LOS DATOS DE LA HOJA (con cacheo) ---
-@st.cache_data(ttl=60)  # Cachea los datos por 60 segundos para reducir llamadas a la API
+# Obtener datos con caché
+@st.cache_data(ttl=60)
 def get_data():
     try:
         return sheet.get_all_values()
     except Exception as e:
         handle_quota_error(e)
-        st.error(f"❌ Error al obtener los datos: {e}")
+        st.error(f"❌ Error: {e}")
         return None
 
-# --- FUNCIÓN PARA BUSCAR FILAS SEGÚN "Cuenta" Y "Sector de Riego" ---
-def find_rows(selected_cuenta, selected_sector, data):
+# Buscar filas según cuenta y sectores seleccionados
+def find_rows(selected_cuenta, selected_sectores, data):
     rows = []
-    for i, row in enumerate(data[1:]):  # Se omite la fila de encabezado
+    for i, row in enumerate(data[1:]):
         match_cuenta = (row[0] == selected_cuenta)
-        match_sector = (selected_sector == "Todos" or row[1] == selected_sector)
+        match_sector = (len(selected_sectores) == 0 or row[1] in selected_sectores)
         if match_cuenta and match_sector:
-            rows.append(i + 2)  # +2 para ajustar al índice de Google Sheets (fila 1 es encabezado)
+            rows.append(i + 2)
     return rows
 
-# --- FUNCIÓN PARA ACTUALIZAR CELDAS (Consultoría, Pasos y Comentarios) ---
+# Actualizar celdas
 def update_steps(rows, steps_updates, consultoria_value, comentarios_value):
     now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     cells_to_update = []
 
-    # Actualizar Consultoría (Columna C)
+    # Actualizar Consultoría
     consultoria_col = 3
     update_consultoria = "" if consultoria_value == "Vacío" else consultoria_value
     for row in rows:
         cells_to_update.append(Cell(row, consultoria_col, update_consultoria))
 
-    # Actualizar cada paso y su fecha (según corresponda)
+    # Actualizar pasos
     for step in steps_updates:
         selected_option = step["value"]
         update_value = "" if selected_option == "Vacío" else selected_option
@@ -78,34 +79,47 @@ def update_steps(rows, steps_updates, consultoria_value, comentarios_value):
         date_col = step["date_col"]
         for row in rows:
             cells_to_update.append(Cell(row, step_col, update_value))
-            # Si se registró un avance, se actualiza la fecha
+            # Actualizar fecha si hay avance
             if update_value in ['Sí', 'Programado', 'Sí (DropControl)', 'Sí (CDTEC IF)']:
                 cells_to_update.append(Cell(row, date_col, now))
             else:
                 cells_to_update.append(Cell(row, date_col, ''))
 
-    # Actualizar Comentarios (Columna R, número 18)
+    # Actualizar Comentarios
     comentarios_col = 18
     for row in rows:
         cells_to_update.append(Cell(row, comentarios_col, comentarios_value))
 
-    # Actualizar Última Actualización (Columna S, número 19)
+    # Actualizar fecha de última modificación
     ultima_actualizacion_col = 19
     for row in rows:
         cells_to_update.append(Cell(row, ultima_actualizacion_col, now))
 
     try:
         sheet.update_cells(cells_to_update, value_input_option='USER_ENTERED')
-        st.success("✅ Se guardaron los cambios correctamente.")
+        st.success("✅ Cambios guardados.")
     except Exception as e:
         handle_quota_error(e)
-        st.error(f"❌ Error en la actualización en batch: {e}")
+        st.error(f"❌ Error: {e}")
 
-# --- FUNCIÓN PRINCIPAL CON INTERFAZ STREAMLIT ---
+# Obtener color según estado
+def get_state_color(state):
+    colors = {
+        'Sí': '#4CAF50',  # Verde
+        'No': '#F44336',  # Rojo
+        'Programado': '#FFC107',  # Amarillo
+        'No aplica': '#9E9E9E',  # Gris
+        'Sí (DropControl)': '#2196F3',  # Azul
+        'Sí (CDTEC IF)': '#673AB7',  # Morado
+        'Vacío': '#E0E0E0',  # Gris claro
+    }
+    return colors.get(state, '#E0E0E0')
+
+# Función principal
 def main():
     st.title("📌 Estado de Clientes")
     
-    # BOTÓN "Abrir Planilla de Google" más pequeño, alineado a la izquierda y justo debajo del título
+    # Botón para abrir planilla
     html_button = f"""
     <div style="text-align: left; margin-bottom: 10px;">
         <a href="{SPREADSHEET_URL}" target="_blank">
@@ -127,7 +141,7 @@ def main():
     """
     components.html(html_button, height=50)
 
-    # Pre-cargar los datos de la hoja en session_state para evitar múltiples llamadas a la API
+    # Cargar datos
     if "data" not in st.session_state:
         st.session_state.data = get_data()
     data = st.session_state.data
@@ -135,49 +149,182 @@ def main():
     if data is None:
         st.stop()
 
-    # Extraer cuentas únicas (Columna A)
+    # Extraer cuentas únicas
     unique_cuentas = sorted(set(row[0] for row in data[1:]))
 
     st.header("Buscar Registro")
     
-    # --- Selección de Cuenta (se reinicia la búsqueda si se cambia) ---
+    # Selección de Cuenta
     cuentas_options = ["Seleccione una cuenta"] + unique_cuentas
     selected_cuenta = st.selectbox("Cuenta", cuentas_options, key="cuenta", on_change=reset_search)
     
-    # --- Selección de Sector de Riego (solo si se ha seleccionado una cuenta válida) ---
+    # Selección múltiple de Sectores
     if selected_cuenta != "Seleccione una cuenta":
         sectores_para_cuenta = [row[1] for row in data[1:] if row[0] == selected_cuenta]
         unique_sectores = sorted(set(sectores_para_cuenta))
-        selected_sector = st.selectbox("Sector de Riego", ["Todos"] + unique_sectores, key="sector", on_change=reset_search)
+        
+        # Inicializar sectores seleccionados en session_state si no existe
+        if "selected_sectores" not in st.session_state:
+            st.session_state.selected_sectores = []
+            
+        st.write("Sectores de Riego (seleccione uno o varios):")
+        for sector in unique_sectores:
+            sector_checked = st.checkbox(sector, key=f"sector_{sector}")
+            if sector_checked and sector not in st.session_state.selected_sectores:
+                st.session_state.selected_sectores.append(sector)
+            elif not sector_checked and sector in st.session_state.selected_sectores:
+                st.session_state.selected_sectores.remove(sector)
+                
+        # Botón para seleccionar todos
+        if st.button("Seleccionar Todos"):
+            st.session_state.selected_sectores = unique_sectores.copy()
+            st.experimental_rerun()
+            
+        # Botón para deseleccionar todos    
+        if st.button("Deseleccionar Todos"):
+            st.session_state.selected_sectores = []
+            st.experimental_rerun()
+            
+        st.write(f"Sectores seleccionados: {', '.join(st.session_state.selected_sectores) if st.session_state.selected_sectores else 'Ninguno'}")
     else:
-        selected_sector = "Todos"
+        st.session_state.selected_sectores = []
 
-    # --- Botón para Buscar Registro ---
+    # Botón para Buscar Registro
     if st.button("Buscar Registro", type="secondary"):
         if selected_cuenta == "Seleccione una cuenta":
-            st.error("❌ Por favor, seleccione una cuenta válida.")
+            st.error("❌ Seleccione una cuenta válida.")
             st.session_state.rows = None
-        else:
-            rows = find_rows(selected_cuenta, selected_sector, data)
+        elif not st.session_state.selected_sectores:
+            st.warning("⚠️ No hay sectores seleccionados. Se mostrarán todos los sectores para esta cuenta.")
+            rows = find_rows(selected_cuenta, [], data)
             if not rows:
-                st.error("❌ No se encontró ninguna fila con los criterios seleccionados.")
+                st.error("❌ No se encontraron registros.")
                 st.session_state.rows = None
             else:
                 st.session_state.rows = rows
-                st.success(f"Se actualizarán en el registro: {len(rows)} sector(es) de riego.")
+                st.success(f"Se actualizarán {len(rows)} sector(es).")
+        else:
+            rows = find_rows(selected_cuenta, st.session_state.selected_sectores, data)
+            if not rows:
+                st.error("❌ No se encontraron registros.")
+                st.session_state.rows = None
+            else:
+                st.session_state.rows = rows
+                st.success(f"Se actualizarán {len(rows)} sector(es).")
 
     if "rows" not in st.session_state:
         st.session_state.rows = None
 
-    # --- Mostrar el Formulario para Actualizar Datos solo si se obtuvo un registro ---
+    # Mostrar tabla dinámica con colores
     if st.session_state.rows is not None:
-        st.header("Registro:")
-        # Se utiliza la información precargada para extraer los valores de la fila
-        fila_index = st.session_state.rows[0] - 1  # Ajuste por índice (lista base 0)
+        st.header("Estado Actual")
+        
+        # Preparar datos para la tabla
+        table_data = []
+        headers = ["Cuenta", "Sector", "Consultoría", 
+                  "Ingreso a Planilla", "Correo Presentación", 
+                  "Puntos Críticos", "Capacitación Plataforma", 
+                  "Documento Power BI", "Capacitación Power BI", 
+                  "Estrategia de Riego"]
+        
+        for row_index in st.session_state.rows:
+            row = data[row_index - 1]  # Ajuste de índice
+            row_data = [
+                row[0],  # Cuenta
+                row[1],  # Sector
+                row[2],  # Consultoría
+                row[3],  # Ingreso a Planilla
+                row[5],  # Correo Presentación
+                row[7],  # Puntos Críticos
+                row[9],  # Capacitación Plataforma
+                row[11], # Documento Power BI
+                row[13], # Capacitación Power BI
+                row[15], # Estrategia de Riego
+            ]
+            table_data.append(row_data)
+        
+        # Crear DataFrame
+        df = pd.DataFrame(table_data, columns=headers)
+        
+        # Crear tabla HTML con colores
+        html_table = """
+        <style>
+        .status-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .status-table th, .status-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        .status-table th {
+            background-color: #f2f2f2;
+            position: sticky;
+            top: 0;
+        }
+        .status-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .status-cell {
+            border-radius: 4px;
+            color: white;
+            padding: 4px 8px;
+            display: inline-block;
+            width: 90%;
+            text-align: center;
+        }
+        </style>
+        <div style="max-height: 300px; overflow-y: auto;">
+        <table class="status-table">
+            <thead>
+                <tr>
+        """
+        
+        # Añadir encabezados
+        for header in headers:
+            html_table += f"<th>{header}</th>"
+        
+        html_table += """
+                </tr>
+            </thead>
+            <tbody>
+        """
+        
+        # Añadir filas con colores
+        for _, row in df.iterrows():
+            html_table += "<tr>"
+            for i, cell in enumerate(row):
+                if i <= 1:  # Cuenta y Sector sin formato
+                    html_table += f"<td>{cell}</td>"
+                else:
+                    cell_value = cell if cell and cell.strip() != "" else "Vacío"
+                    color = get_state_color(cell_value)
+                    html_table += f"""
+                    <td>
+                        <div class="status-cell" style="background-color: {color};">
+                            {cell_value}
+                        </div>
+                    </td>
+                    """
+            html_table += "</tr>"
+        
+        html_table += """
+            </tbody>
+        </table>
+        </div>
+        """
+        
+        # Mostrar tabla
+        st.components.v1.html(html_table, height=350)
+
+        # Mostrar formulario de actualización
+        st.header("Actualizar Registro")
+        fila_index = st.session_state.rows[0] - 1
         fila_datos = data[fila_index]
 
         with st.form("update_form"):
-            # 1. Consultoría (Columna C, índice 2)
+            # 1. Consultoría
             consultoria_default = fila_datos[2] if len(fila_datos) >= 3 else ""
             display_consultoria = consultoria_default.strip() if consultoria_default and consultoria_default.strip() != "" else "Vacío"
             consultoria_options = ["Sí", "No"]
@@ -189,7 +336,7 @@ def main():
                 consultoria_index = 0
             consultoria_value = st.selectbox("Consultoría", options=consultoria_options, index=consultoria_index)
 
-            # 2. Pasos a actualizar (según el orden indicado)
+            # 2. Pasos a actualizar
             steps_mapping = [
                 {"step_label": "Ingreso a Planilla Clientes Nuevos", "step_col": 4, "date_col": 5},
                 {"step_label": "Correo Presentación y Solicitud Información", "step_col": 6, "date_col": 7},
@@ -209,9 +356,12 @@ def main():
                 "Generar Estrategia de Riego": ['Sí', 'No', 'Programado', 'No aplica']
             }
             steps_updates = []
+            
+            # Crear dos columnas para organizar los pasos
+            col1, col2 = st.columns(2)
+            
             for i, step in enumerate(steps_mapping):
                 step_label = step["step_label"]
-                # Se obtiene el valor de la celda usando la información precargada (ajuste índice base 0)
                 col_index = step["step_col"] - 1
                 default_val = fila_datos[col_index] if len(fila_datos) > col_index else ""
                 display_val = default_val.strip() if default_val and default_val.strip() != "" else "Vacío"
@@ -219,12 +369,15 @@ def main():
                 if display_val not in options_for_select:
                     options_for_select = [display_val] + options_for_select
                 default_index = options_for_select.index(display_val)
-                selected_val = st.selectbox(
-                    step_label,
-                    options=options_for_select,
-                    index=default_index,
-                    key=f"step_{i}"
-                )
+                
+                # Alternar entre columnas
+                with col1 if i % 2 == 0 else col2:
+                    selected_val = st.selectbox(
+                        step_label,
+                        options=options_for_select,
+                        index=default_index,
+                        key=f"step_{i}"
+                    )
                 steps_updates.append({
                     "step_label": step_label,
                     "step_col": step["step_col"],
@@ -232,13 +385,14 @@ def main():
                     "value": selected_val
                 })
 
-            # 3. Comentarios (Columna R, índice 17)
+            # 3. Comentarios
             comentarios_default = fila_datos[17] if len(fila_datos) >= 18 else ""
             comentarios_value = st.text_area("Comentarios", value=comentarios_default if comentarios_default is not None else "")
 
             submitted = st.form_submit_button("Guardar Cambios", type="primary")
             if submitted:
                 update_steps(st.session_state.rows, steps_updates, consultoria_value, comentarios_value)
+                st.experimental_rerun()  # Recargar para mostrar cambios
 
 if __name__ == "__main__":
     main()
