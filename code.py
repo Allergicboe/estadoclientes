@@ -361,11 +361,11 @@ def main():
         # Ordenar sectores alfabéticamente
         sectores_encontrados = sorted(set(sectores_encontrados))
         
-        # Crear tabla HTML para comentarios - ALTURA FIJA DE 150px
+        # Crear tabla HTML para comentarios
         html_comentarios = f"""
         <style>
         .comments-container {{
-            max-height: 150px;
+            max-height: 100px;
             overflow-y: auto;
             margin-bottom: 0px;
         }}
@@ -422,8 +422,8 @@ def main():
         </div>
         """
         
-        # Mostrar tabla de comentarios con altura fija de 150px + margen
-        st.components.v1.html(html_comentarios, height=150)
+        # Mostrar tabla de comentarios
+        st.components.v1.html(html_comentarios, height=100)
 
         # Mostrar formulario de actualización
         st.header("Actualizar Registro")
