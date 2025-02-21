@@ -263,7 +263,7 @@ def main():
         
         # Altura tabla estado cliente
         min_rows = max(1, len(table_data))
-        table_height = min(2000, max(150, min_rows * 40 + 50))
+        table_height = min(500, max(min_rows))
         
         # Crear tabla HTML con colores y fuente predeterminada de Streamlit
         html_table = f"""
@@ -365,7 +365,7 @@ def main():
         html_comentarios = f"""
         <style>
         .comments-container {{
-            max-height: 150px;
+            max-height: 300px;
             overflow-y: auto;
             margin-bottom: 0px;
         }}
@@ -423,7 +423,7 @@ def main():
         """
         
         # Mostrar tabla de comentarios
-        st.components.v1.html(html_comentarios, height=150)
+        st.components.v1.html(html_comentarios, height=300)
 
         # Mostrar formulario de actualización
         st.header("Actualizar Registro")
