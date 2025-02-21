@@ -361,11 +361,11 @@ def main():
         # Ordenar sectores alfabéticamente
         sectores_encontrados = sorted(set(sectores_encontrados))
         
-        # Crear tabla HTML para comentarios - ALTURA FIJA DE 300px
+        # Crear tabla HTML para comentarios
         html_comentarios = f"""
         <style>
         .comments-container {{
-            max-height: 300px;  # <-- Altura fija de 300px
+            max-height: 150px;  # <-- Altura fija
             overflow-y: auto;
             margin-bottom: 25px;
         }}
