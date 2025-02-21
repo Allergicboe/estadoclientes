@@ -344,6 +344,79 @@ def main():
         # Mostrar tabla con altura dinámica
         st.components.v1.html(html_table, height=table_height + 20)  # +20 para un poco de margen
 
+        # NUEVA SECCIÓN: Tabla de Comentarios por Sector
+        st.subheader("Comentarios por Sector")
+        
+        # Preparar datos para la tabla de comentarios
+        comentarios_data = {}
+        sectores_encontrados = []
+        
+        for row_index in st.session_state.rows:
+            row = data[row_index - 1]  # Ajuste de índice
+            sector = row[1]
+            comentario = row[17] if len(row) > 17 and row[17] else "Sin comentarios"
+            sectores_encontrados.append(sector)
+            comentarios_data[sector] = comentario
+        
+        # Ordenar sectores alfabéticamente
+        sectores_encontrados = sorted(set(sectores_encontrados))
+        
+        # Crear tabla HTML para comentarios
+        html_comentarios = f"""
+        <style>
+        .comments-table {{
+            width: 100%;
+            border-collapse: collapse;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+            margin-top: 15px;
+            margin-bottom: 25px;
+        }}
+        .comments-table th, .comments-table td {{
+            border: 1px solid #ddd;
+            padding: 12px;
+        }}
+        .comments-table th {{
+            background-color: #f2f2f2;
+            text-align: center;
+            font-weight: bold;
+        }}
+        .comments-table td {{
+            text-align: left;
+            vertical-align: top;
+            background-color: #f9f9f9;
+        }}
+        </style>
+        <table class="comments-table">
+            <thead>
+                <tr>
+        """
+        
+        # Añadir encabezados (sectores)
+        for sector in sectores_encontrados:
+            html_comentarios += f"<th>{sector}</th>"
+        
+        html_comentarios += """
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+        """
+        
+        # Añadir comentarios
+        for sector in sectores_encontrados:
+            comentario = comentarios_data.get(sector, "Sin comentarios")
+            html_comentarios += f"<td>{comentario}</td>"
+        
+        html_comentarios += """
+                </tr>
+            </tbody>
+        </table>
+        """
+        
+        # Mostrar tabla de comentarios
+        comments_height = max(150, min(350, len(sectores_encontrados) * 50))
+        st.components.v1.html(html_comentarios, height=comments_height)
+
         # Mostrar formulario de actualización
         st.header("Actualizar Registro")
         fila_index = st.session_state.rows[0] - 1
