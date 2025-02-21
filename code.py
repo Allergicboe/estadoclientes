@@ -251,9 +251,9 @@ def main():
         # Crear DataFrame
         df = pd.DataFrame(table_data, columns=headers)
         
-        # Calcular la altura dinámica de la tabla basada en el número de filas
-        # Mínimo 100px, máximo 500px, ~40px por fila + 50px para encabezado
-        table_height = min(1000, max(100, len(table_data) * 40 + 50))
+        # Altura tabla estado cliente
+        min_rows = max(5, len(table_data))
+        table_height = min(1000, max(300, min_rows * 40 + 50))
         
         # Crear tabla HTML con colores y fuente predeterminada de Streamlit
         html_table = f"""
