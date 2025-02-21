@@ -169,20 +169,13 @@ def main():
             
         st.write("Sectores de Riego (seleccione uno o varios):")
         
+        # Botón "Seleccionar Todos" arriba con ancho completo
+        if st.button("Seleccionar Todos", use_container_width=True):
+            st.session_state.selected_sectores = unique_sectores.copy()
+            st.rerun()
+        
         # Contenedor para los checkboxes
         checkbox_container = st.container()
-        
-        # Botones "Seleccionar Todos" y "Deseleccionar Todos" en la misma fila
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("Seleccionar Todos"):
-                st.session_state.selected_sectores = unique_sectores.copy()
-                st.rerun()
-                
-        with col2:    
-            if st.button("Deseleccionar Todos"):
-                st.session_state.selected_sectores = []
-                st.rerun()
         
         # Mostrar checkboxes para sectores
         with checkbox_container:
@@ -193,13 +186,16 @@ def main():
                     st.session_state.selected_sectores.append(sector)
                 elif not sector_checked and sector in st.session_state.selected_sectores:
                     st.session_state.selected_sectores.remove(sector)
-            
-        st.write(f"Sectores seleccionados: {', '.join(st.session_state.selected_sectores) if st.session_state.selected_sectores else 'Ninguno'}")
+        
+        # Botón "Deseleccionar Todos" abajo con ancho completo
+        if st.button("Deseleccionar Todos", use_container_width=True):
+            st.session_state.selected_sectores = []
+            st.rerun()
     else:
         st.session_state.selected_sectores = []
 
-    # Botón para Buscar Registro
-    if st.button("Buscar Registro", type="secondary"):
+    # Botón para Buscar Registro (con tipo primary)
+    if st.button("Buscar Registro", type="primary", use_container_width=True):
         if selected_cuenta == "Seleccione una cuenta":
             st.error("❌ Seleccione una cuenta válida.")
             st.session_state.rows = None
@@ -255,37 +251,41 @@ def main():
         # Crear DataFrame
         df = pd.DataFrame(table_data, columns=headers)
         
+        # Calcular la altura dinámica de la tabla basada en el número de filas
+        # Mínimo 100px, máximo 500px, ~40px por fila + 50px para encabezado
+        table_height = min(500, max(100, len(table_data) * 40 + 50))
+        
         # Crear tabla HTML con colores y fuente predeterminada de Streamlit
-        html_table = """
+        html_table = f"""
         <style>
-        .status-table {
+        .status-table {{
             width: 100%;
             border-collapse: collapse;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-        }
-        .status-table th, .status-table td {
+        }}
+        .status-table th, .status-table td {{
             border: 1px solid #ddd;
             padding: 8px;
             text-align: center;
-        }
-        .status-table th {
+        }}
+        .status-table th {{
             background-color: #f2f2f2;
             position: sticky;
             top: 0;
-        }
-        .status-table tr:nth-child(even) {
+        }}
+        .status-table tr:nth-child(even) {{
             background-color: #f9f9f9;
-        }
-        .status-cell {
+        }}
+        .status-cell {{
             border-radius: 4px;
             color: white;
             padding: 4px 8px;
             display: inline-block;
             width: 90%;
             text-align: center;
-        }
+        }}
         </style>
-        <div style="max-height: 250px; overflow-y: auto;">
+        <div style="max-height: {table_height}px; overflow-y: auto;">
         <table class="status-table">
             <thead>
                 <tr>
@@ -325,10 +325,10 @@ def main():
         </div>
         """
         
-        # Mostrar tabla
-        st.components.v1.html(html_table, height=300)
+        # Mostrar tabla con altura dinámica
+        st.components.v1.html(html_table, height=table_height + 20)  # +20 para un poco de margen
 
-        # Mostrar formulario de actualización (sin espacio excesivo)
+        # Mostrar formulario de actualización
         st.header("Actualizar Registro")
         fila_index = st.session_state.rows[0] - 1
         fila_datos = data[fila_index]
@@ -397,7 +397,7 @@ def main():
             submitted = st.form_submit_button("Guardar Cambios", type="primary")
             if submitted:
                 update_steps(st.session_state.rows, steps_updates, consultoria_value, comentarios_value)
-                st.rerun()  # Usar st.rerun() en lugar de st.experimental_rerun()
+                st.rerun()
 
 if __name__ == "__main__":
     main()
