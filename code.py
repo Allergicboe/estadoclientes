@@ -98,9 +98,13 @@ def update_steps(rows, steps_updates, consultoria_value, comentarios_value):
     try:
         sheet.update_cells(cells_to_update, value_input_option='USER_ENTERED')
         st.success("✅ Cambios guardados.")
+        # Invalidar caché para forzar la recarga de datos
+        st.cache_data.clear()
+        return True
     except Exception as e:
         handle_quota_error(e)
         st.error(f"❌ Error: {e}")
+        return False
 
 # Obtener color según estado
 def get_state_color(state):
@@ -141,9 +145,14 @@ def main():
     """
     components.html(html_button, height=50)
 
-    # Cargar datos
-    if "data" not in st.session_state:
+    # Inicializar estado de actualizaciones
+    if "update_successful" not in st.session_state:
+        st.session_state.update_successful = False
+
+    # Cargar datos - siempre cargar datos frescos si hubo una actualización exitosa
+    if "data" not in st.session_state or st.session_state.update_successful:
         st.session_state.data = get_data()
+        st.session_state.update_successful = False
     data = st.session_state.data
 
     if data is None:
@@ -396,8 +405,11 @@ def main():
 
             submitted = st.form_submit_button("Guardar Cambios", type="primary")
             if submitted:
-                update_steps(st.session_state.rows, steps_updates, consultoria_value, comentarios_value)
-                st.rerun()
+                success = update_steps(st.session_state.rows, steps_updates, consultoria_value, comentarios_value)
+                if success:
+                    # Marcar que se realizó una actualización exitosa para recargar datos
+                    st.session_state.update_successful = True
+                    st.rerun()
 
 if __name__ == "__main__":
     main()
