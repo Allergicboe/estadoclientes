@@ -365,9 +365,9 @@ def main():
         html_comentarios = f"""
         <style>
         .comments-container {{
-            max-height: 150px;  /* Altura fija de 150px */
+            max-height: 150px;
             overflow-y: auto;
-            margin-bottom: 25px;
+            margin-bottom: 5px;
         }}
         .comments-table {{
             width: 100%;
@@ -423,7 +423,7 @@ def main():
         """
         
         # Mostrar tabla de comentarios con altura fija de 150px + margen
-        st.components.v1.html(html_comentarios, height=170)  # 150px + 20px de margen
+        st.components.v1.html(html_comentarios, height=155)
 
         # Mostrar formulario de actualización
         st.header("Actualizar Registro")
