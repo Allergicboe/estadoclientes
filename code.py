@@ -169,13 +169,13 @@ def main():
             
         st.write("Sectores de Riego (seleccione uno o varios):")
         
+        # Contenedor para los checkboxes
+        checkbox_container = st.container()
+
         # Botón "Seleccionar Todos" arriba con ancho completo
         if st.button("Seleccionar Todos", use_container_width=True):
             st.session_state.selected_sectores = unique_sectores.copy()
             st.rerun()
-        
-        # Contenedor para los checkboxes
-        checkbox_container = st.container()
         
         # Mostrar checkboxes para sectores
         with checkbox_container:
@@ -253,7 +253,7 @@ def main():
         
         # Calcular la altura dinámica de la tabla basada en el número de filas
         # Mínimo 100px, máximo 500px, ~40px por fila + 50px para encabezado
-        table_height = min(500, max(100, len(table_data) * 40 + 50))
+        table_height = min(1000, max(100, len(table_data) * 40 + 50))
         
         # Crear tabla HTML con colores y fuente predeterminada de Streamlit
         html_table = f"""
