@@ -38,7 +38,7 @@ def handle_quota_error(e):
     if "quota" in error_str or "limit" in error_str:
         st.error("❌ Límite de API alcanzado. Reiniciando...")
         time.sleep(1)
-        st.experimental_rerun()
+        st.rerun()
 
 # Obtener datos con caché
 @st.cache_data(ttl=60)
@@ -168,22 +168,31 @@ def main():
             st.session_state.selected_sectores = []
             
         st.write("Sectores de Riego (seleccione uno o varios):")
-        for sector in unique_sectores:
-            sector_checked = st.checkbox(sector, key=f"sector_{sector}")
-            if sector_checked and sector not in st.session_state.selected_sectores:
-                st.session_state.selected_sectores.append(sector)
-            elif not sector_checked and sector in st.session_state.selected_sectores:
-                st.session_state.selected_sectores.remove(sector)
+        
+        # Contenedor para los checkboxes
+        checkbox_container = st.container()
+        
+        # Botones "Seleccionar Todos" y "Deseleccionar Todos" en la misma fila
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("Seleccionar Todos"):
+                st.session_state.selected_sectores = unique_sectores.copy()
+                st.rerun()
                 
-        # Botón para seleccionar todos
-        if st.button("Seleccionar Todos"):
-            st.session_state.selected_sectores = unique_sectores.copy()
-            st.experimental_rerun()
-            
-        # Botón para deseleccionar todos    
-        if st.button("Deseleccionar Todos"):
-            st.session_state.selected_sectores = []
-            st.experimental_rerun()
+        with col2:    
+            if st.button("Deseleccionar Todos"):
+                st.session_state.selected_sectores = []
+                st.rerun()
+        
+        # Mostrar checkboxes para sectores
+        with checkbox_container:
+            for sector in unique_sectores:
+                sector_checked = st.checkbox(sector, key=f"sector_{sector}", 
+                                             value=sector in st.session_state.selected_sectores)
+                if sector_checked and sector not in st.session_state.selected_sectores:
+                    st.session_state.selected_sectores.append(sector)
+                elif not sector_checked and sector in st.session_state.selected_sectores:
+                    st.session_state.selected_sectores.remove(sector)
             
         st.write(f"Sectores seleccionados: {', '.join(st.session_state.selected_sectores) if st.session_state.selected_sectores else 'Ninguno'}")
     else:
@@ -246,12 +255,13 @@ def main():
         # Crear DataFrame
         df = pd.DataFrame(table_data, columns=headers)
         
-        # Crear tabla HTML con colores
+        # Crear tabla HTML con colores y fuente predeterminada de Streamlit
         html_table = """
         <style>
         .status-table {
             width: 100%;
             border-collapse: collapse;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
         }
         .status-table th, .status-table td {
             border: 1px solid #ddd;
@@ -275,7 +285,7 @@ def main():
             text-align: center;
         }
         </style>
-        <div style="max-height: 300px; overflow-y: auto;">
+        <div style="max-height: 250px; overflow-y: auto;">
         <table class="status-table">
             <thead>
                 <tr>
@@ -316,9 +326,9 @@ def main():
         """
         
         # Mostrar tabla
-        st.components.v1.html(html_table, height=350)
+        st.components.v1.html(html_table, height=300)
 
-        # Mostrar formulario de actualización
+        # Mostrar formulario de actualización (sin espacio excesivo)
         st.header("Actualizar Registro")
         fila_index = st.session_state.rows[0] - 1
         fila_datos = data[fila_index]
@@ -336,7 +346,7 @@ def main():
                 consultoria_index = 0
             consultoria_value = st.selectbox("Consultoría", options=consultoria_options, index=consultoria_index)
 
-            # 2. Pasos a actualizar
+            # 2. Pasos a actualizar (en una sola columna)
             steps_mapping = [
                 {"step_label": "Ingreso a Planilla Clientes Nuevos", "step_col": 4, "date_col": 5},
                 {"step_label": "Correo Presentación y Solicitud Información", "step_col": 6, "date_col": 7},
@@ -357,9 +367,6 @@ def main():
             }
             steps_updates = []
             
-            # Crear dos columnas para organizar los pasos
-            col1, col2 = st.columns(2)
-            
             for i, step in enumerate(steps_mapping):
                 step_label = step["step_label"]
                 col_index = step["step_col"] - 1
@@ -370,14 +377,12 @@ def main():
                     options_for_select = [display_val] + options_for_select
                 default_index = options_for_select.index(display_val)
                 
-                # Alternar entre columnas
-                with col1 if i % 2 == 0 else col2:
-                    selected_val = st.selectbox(
-                        step_label,
-                        options=options_for_select,
-                        index=default_index,
-                        key=f"step_{i}"
-                    )
+                selected_val = st.selectbox(
+                    step_label,
+                    options=options_for_select,
+                    index=default_index,
+                    key=f"step_{i}"
+                )
                 steps_updates.append({
                     "step_label": step_label,
                     "step_col": step["step_col"],
@@ -392,7 +397,7 @@ def main():
             submitted = st.form_submit_button("Guardar Cambios", type="primary")
             if submitted:
                 update_steps(st.session_state.rows, steps_updates, consultoria_value, comentarios_value)
-                st.experimental_rerun()  # Recargar para mostrar cambios
+                st.rerun()  # Usar st.rerun() en lugar de st.experimental_rerun()
 
 if __name__ == "__main__":
     main()
