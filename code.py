@@ -423,7 +423,7 @@ def main():
         """
         
         # Mostrar tabla de comentarios
-        st.components.v1.html(html_comentarios, height=100)
+        st.components.v1.html(html_comentarios, height=150)
 
         # Mostrar formulario de actualización
         st.header("Actualizar Registro")
