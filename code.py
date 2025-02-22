@@ -360,7 +360,7 @@ def main():
           function resizeEstado() {
               var el = document.getElementById("estado_actual");
               var scrollHeight = el.scrollHeight;
-              var newHeight = (scrollHeight > 80) ? 350 : 80;
+              var newHeight = (scrollHeight > 80) ? 500 : 80;
               if(window.Streamlit) {
                   Streamlit.setFrameHeight(newHeight);
               }
@@ -450,7 +450,7 @@ def main():
           function resizeComentarios() {
               var el = document.getElementById("comentarios");
               var scrollHeight = el.scrollHeight;
-              var newHeight = (scrollHeight > 50) ? 100 : 50;
+              var newHeight = (scrollHeight > 30) ? 80 : 30;
               if(window.Streamlit) {
                   Streamlit.setFrameHeight(newHeight);
               }
