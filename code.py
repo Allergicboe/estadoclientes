@@ -360,7 +360,7 @@ def main():
           function resizeEstado() {
               var el = document.getElementById("estado_actual");
               var scrollHeight = el.scrollHeight;
-              var newHeight = (scrollHeight > 150) ? 500 : 150;
+              var newHeight = (scrollHeight > 80) ? 350 : 80;
               if(window.Streamlit) {
                   Streamlit.setFrameHeight(newHeight);
               }
@@ -370,9 +370,7 @@ def main():
           resizeEstado();
         </script>
         """
-        
-        # Mostrar la tabla "Estado Actual" con altura inicial de 300 (se ajustará si corresponde)
-        st.components.v1.html(html_table, height=300, scrolling=True)
+        st.components.v1.html(html_table, scrolling=True)
 
         # Sección: Comentarios por Sector
         st.subheader("Comentarios por Sector")
@@ -452,7 +450,7 @@ def main():
           function resizeComentarios() {
               var el = document.getElementById("comentarios");
               var scrollHeight = el.scrollHeight;
-              var newHeight = (scrollHeight > 50) ? 150 : 50;
+              var newHeight = (scrollHeight > 50) ? 100 : 50;
               if(window.Streamlit) {
                   Streamlit.setFrameHeight(newHeight);
               }
