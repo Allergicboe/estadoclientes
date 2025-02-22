@@ -263,7 +263,7 @@ def main():
         
         # Altura tabla estado cliente
         min_rows = max(1, len(table_data))
-        table_height = min(1000, max(150, min_rows * 40 + 50))
+        table_height = min(1000, max(200, min_rows))
         
         # Crear tabla HTML con colores y fuente predeterminada de Streamlit
         html_table = f"""
@@ -342,7 +342,7 @@ def main():
         """
         
         # Mostrar tabla con altura dinámica
-        st.components.v1.html(html_table, height=table_height + 20)  # +20 para un poco de margen
+        st.components.v1.html(html_table, height=table_height)
 
         # NUEVA SECCIÓN: Tabla de Comentarios por Sector
         st.subheader("Comentarios por Sector")
@@ -365,7 +365,7 @@ def main():
         html_comentarios = f"""
         <style>
         .comments-container {{
-            max-height: 150px;
+            max-height: 120px;
             overflow-y: auto;
             margin-bottom: 0px;
         }}
