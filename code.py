@@ -278,7 +278,8 @@ def main():
         # Crear DataFrame
         df = pd.DataFrame(table_data, columns=headers)
         
-        # HTML para la tabla "Estado Actual" con CSS ajustado y autoajuste de altura
+        # HTML para la tabla "Estado Actual" con CSS ajustado y sistema dinámico:
+        # Se usa 300px de altura por defecto y si el contenido es mayor se extiende a 500px.
         html_table = f"""
         <style>
         .status-table {{
@@ -316,7 +317,7 @@ def main():
             color: #333;
         }}
         </style>
-        <div style="overflow-y: auto; margin-bottom: 0px;">
+        <div id="estado_actual">
         <table class="status-table">
             <thead>
                 <tr>
@@ -357,19 +358,22 @@ def main():
         </table>
         </div>
         <script>
-          function resizeFrame() {
-              const height = document.documentElement.scrollHeight;
-              if (window.Streamlit) {
-                  Streamlit.setFrameHeight(height);
+          function resizeEstado() {
+              var el = document.getElementById("estado_actual");
+              var scrollHeight = el.scrollHeight;
+              // Si el contenido es mayor a 300px se extiende a 500, sino se mantiene en 300.
+              var newHeight = (scrollHeight > 300) ? 500 : 300;
+              if(window.Streamlit) {
+                  Streamlit.setFrameHeight(newHeight);
               }
           }
-          window.addEventListener('load', resizeFrame);
-          window.addEventListener('resize', resizeFrame);
-          resizeFrame();
+          window.addEventListener('load', resizeEstado);
+          window.addEventListener('resize', resizeEstado);
+          resizeEstado();
         </script>
         """
         
-        # Mostrar la tabla "Estado Actual" (la altura se ajusta automáticamente)
+        # Mostrar la tabla "Estado Actual" con altura inicial de 300 (se ajustará si corresponde)
         st.components.v1.html(html_table, height=300, scrolling=True)
 
         # Sección: Comentarios por Sector
@@ -389,14 +393,10 @@ def main():
         # Ordenar sectores alfabéticamente
         sectores_encontrados = sorted(set(sectores_encontrados))
         
-        # HTML para la tabla de comentarios con CSS ajustado y autoajuste de altura
+        # HTML para la tabla de comentarios con CSS ajustado y sistema dinámico:
+        # Se usa 150px de altura por defecto y si el contenido es mayor se extiende a 300px.
         html_comentarios = f"""
         <style>
-        .comments-container {{
-            overflow-y: auto;
-            margin-bottom: 0px;
-            padding-bottom: 0px;
-        }}
         .comments-table {{
             width: 100%;
             border-collapse: collapse;
@@ -424,7 +424,7 @@ def main():
             background-color: #f9f9f9;
         }}
         </style>
-        <div class="comments-container">
+        <div id="comentarios">
         <table class="comments-table">
             <thead>
                 <tr>
@@ -452,20 +452,23 @@ def main():
         </table>
         </div>
         <script>
-          function resizeComments() {
-              const height = document.documentElement.scrollHeight;
-              if (window.Streamlit) {
-                  Streamlit.setFrameHeight(height);
+          function resizeComentarios() {
+              var el = document.getElementById("comentarios");
+              var scrollHeight = el.scrollHeight;
+              // Si el contenido es mayor a 150px se extiende a 300, sino se mantiene en 150.
+              var newHeight = (scrollHeight > 150) ? 300 : 150;
+              if(window.Streamlit) {
+                  Streamlit.setFrameHeight(newHeight);
               }
           }
-          window.addEventListener('load', resizeComments);
-          window.addEventListener('resize', resizeComments);
-          resizeComments();
+          window.addEventListener('load', resizeComentarios);
+          window.addEventListener('resize', resizeComentarios);
+          resizeComentarios();
         </script>
         """
         
-        # Mostrar la tabla de comentarios (autoajuste de altura)
-        st.components.v1.html(html_comentarios, height=300, scrolling=True)
+        # Mostrar la tabla de comentarios con altura inicial de 150 (se ajustará si corresponde)
+        st.components.v1.html(html_comentarios, height=150, scrolling=True)
 
         # Mostrar formulario de actualización
         st.header("Actualizar Registro")
