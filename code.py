@@ -360,7 +360,7 @@ def main():
           function resizeEstado() {
               var el = document.getElementById("estado_actual");
               var scrollHeight = el.scrollHeight;
-              var newHeight = (scrollHeight > 80) ? 700 : 80;
+              var newHeight = (scrollHeight > 50) ? 100 : 10;
               if(window.Streamlit) {
                   Streamlit.setFrameHeight(newHeight);
               }
