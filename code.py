@@ -261,7 +261,11 @@ def main():
         # Crear DataFrame
         df = pd.DataFrame(table_data, columns=headers)
         
-        # Crear tabla HTML con colores sin límite de altura y con altura mínima de 150px
+        # Altura tabla estado cliente
+        min_rows = max(1, len(table_data))
+        table_height = min(1000, max(150, min_rows * 40 + 50))
+        
+        # Crear tabla HTML con colores y fuente predeterminada de Streamlit
         html_table = f"""
         <style>
         .status-table {{
@@ -295,7 +299,7 @@ def main():
             color: #333;
         }}
         </style>
-        <div style="min-height: 150px;">
+        <div style="max-height: {table_height}px; overflow-y: auto;">
         <table class="status-table">
             <thead>
                 <tr>
@@ -337,8 +341,8 @@ def main():
         </div>
         """
         
-        # Mostrar tabla sin límite de altura y sin scroll
-        st.components.v1.html(html_table, height=0)
+        # Mostrar tabla con altura dinámica
+        st.components.v1.html(html_table, height=table_height + 20)  # +20 para un poco de margen
 
         # NUEVA SECCIÓN: Tabla de Comentarios por Sector
         st.subheader("Comentarios por Sector")
@@ -357,11 +361,12 @@ def main():
         # Ordenar sectores alfabéticamente
         sectores_encontrados = sorted(set(sectores_encontrados))
         
-        # Crear tabla HTML para comentarios sin scroll y con altura mínima de 150px
+        # Crear tabla HTML para comentarios
         html_comentarios = f"""
         <style>
         .comments-container {{
-            min-height: 150px;
+            max-height: 150px;
+            overflow-y: auto;
             margin-bottom: 0px;
         }}
         .comments-table {{
@@ -417,8 +422,8 @@ def main():
         </div>
         """
         
-        # Mostrar tabla de comentarios sin scroll
-        st.components.v1.html(html_comentarios, height=0)
+        # Mostrar tabla de comentarios
+        st.components.v1.html(html_comentarios, height=150)
 
         # Mostrar formulario de actualización
         st.header("Actualizar Registro")
