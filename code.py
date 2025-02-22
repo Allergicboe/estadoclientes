@@ -278,8 +278,7 @@ def main():
         # Crear DataFrame
         df = pd.DataFrame(table_data, columns=headers)
         
-        # HTML para la tabla "Estado Actual" con CSS ajustado y sistema dinámico:
-        # Se usa 300px de altura por defecto y si el contenido es mayor se extiende a 500px.
+        # Se usa X px de altura por defecto y si el contenido es mayor se extiende a Y px.
         html_table = f"""
         <style>
         .status-table {{
@@ -361,8 +360,7 @@ def main():
           function resizeEstado() {
               var el = document.getElementById("estado_actual");
               var scrollHeight = el.scrollHeight;
-              // Si el contenido es mayor a 300px se extiende a 500, sino se mantiene en 300.
-              var newHeight = (scrollHeight > 300) ? 500 : 300;
+              var newHeight = (scrollHeight > 150) ? 500 : 150;
               if(window.Streamlit) {
                   Streamlit.setFrameHeight(newHeight);
               }
@@ -394,7 +392,6 @@ def main():
         sectores_encontrados = sorted(set(sectores_encontrados))
         
         # HTML para la tabla de comentarios con CSS ajustado y sistema dinámico:
-        # Se usa 150px de altura por defecto y si el contenido es mayor se extiende a 300px.
         html_comentarios = f"""
         <style>
         .comments-table {{
@@ -455,8 +452,7 @@ def main():
           function resizeComentarios() {
               var el = document.getElementById("comentarios");
               var scrollHeight = el.scrollHeight;
-              // Si el contenido es mayor a 150px se extiende a 300, sino se mantiene en 150.
-              var newHeight = (scrollHeight > 150) ? 300 : 150;
+              var newHeight = (scrollHeight > 50) ? 150 : 50;
               if(window.Streamlit) {
                   Streamlit.setFrameHeight(newHeight);
               }
@@ -466,9 +462,7 @@ def main():
           resizeComentarios();
         </script>
         """
-        
-        # Mostrar la tabla de comentarios con altura inicial de 150 (se ajustará si corresponde)
-        st.components.v1.html(html_comentarios, height=150, scrolling=True)
+        st.components.v1.html(html_comentarios, scrolling=True)
 
         # Mostrar formulario de actualización
         st.header("Actualizar Registro")
