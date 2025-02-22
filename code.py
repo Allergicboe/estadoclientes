@@ -229,7 +229,7 @@ def main():
     if "rows" not in st.session_state:
         st.session_state.rows = None
 
-    # Mostrar tabla dinámica con colores
+    # Mostrar tabla dinámica con colores (Estado Actual)
     if st.session_state.rows is not None:
         st.header("Estado Actual")
         
@@ -254,13 +254,18 @@ def main():
                 row[11], # Documento Power BI
                 row[13], # Capacitación Power BI
                 row[15], # Estrategia de Riego
-                row[18] if len(row) > 18 else "",  # Última Actualización (columna S)
+                row[18] if len(row) > 18 else "",  # Última Actualización
             ]
             table_data.append(row_data)
         
-        # Altura tabla estado cliente
-        min_rows = max(1, len(table_data))
-        table_height = min(1000, max(250, min_rows))
+        # Definir la altura del frame Estado Actual según el número de filas
+        n_rows = len(table_data)
+        if n_rows <= 3:
+            estado_height = 160
+        elif n_rows <= 10:
+            estado_height = 250
+        else:
+            estado_height = 700
         
         # Crear DataFrame para iterar sobre los datos
         df = pd.DataFrame(table_data, columns=headers)
@@ -299,7 +304,7 @@ def main():
             color: #333;
         }}
         </style>
-        <div style="max-height: {table_height}px; overflow-y: auto;">
+        <div style="height: {estado_height}px; overflow-y: auto;">
         <table class="status-table">
             <thead>
                 <tr>
@@ -341,10 +346,10 @@ def main():
         </div>
         """
         
-        # Mostrar tabla con altura dinámica
-        st.components.v1.html(html_table, height=table_height)
+        # Mostrar frame Estado Actual
+        st.components.v1.html(html_table, height=estado_height)
 
-        # SECCIÓN: Tabla de Comentarios por Sector (sin límite de altura)
+        # SECCIÓN: Tabla de Comentarios por Sector
         st.subheader("Comentarios por Sector")
         
         # Preparar datos para la tabla de comentarios
@@ -360,13 +365,12 @@ def main():
         
         # Ordenar sectores alfabéticamente
         sectores_encontrados = sorted(set(sectores_encontrados))
+        # Definir la altura del frame Comentarios por Sector:
+        comentarios_height = 160 if len(sectores_encontrados) <= 1 else 250
         
-        # Crear tabla HTML para comentarios sin límite de altura
+        # Crear tabla HTML para comentarios
         html_comentarios = f"""
         <style>
-        .comments-container {{
-            margin-bottom: 0px;
-        }}
         .comments-table {{
             width: 100%;
             border-collapse: collapse;
@@ -391,7 +395,7 @@ def main():
             background-color: #f9f9f9;
         }}
         </style>
-        <div class="comments-container">
+        <div style="height: {comentarios_height}px; overflow-y: auto;">
         <table class="comments-table">
             <thead>
                 <tr>
@@ -420,8 +424,8 @@ def main():
         </div>
         """
         
-        # Mostrar tabla de comentarios sin límite de altura
-        st.components.v1.html(html_comentarios)
+        # Mostrar frame Comentarios por Sector
+        st.components.v1.html(html_comentarios, height=comentarios_height)
 
         # Mostrar formulario de actualización
         st.header("Actualizar Registro")
