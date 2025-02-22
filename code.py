@@ -261,11 +261,11 @@ def main():
         # Definir la altura del frame Estado Actual según el número de filas
         n_rows = len(table_data)
         if n_rows <= 3:
-            estado_height = 260
+            estado_height = 230
         elif n_rows <= 10:
-            estado_height = 700
+            estado_height = 500
         else:
-            estado_height = 700
+            estado_height = 500
         
         # Crear DataFrame para iterar sobre los datos
         df = pd.DataFrame(table_data, columns=headers)
