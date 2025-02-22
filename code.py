@@ -262,6 +262,9 @@ def main():
         min_rows = max(1, len(table_data))
         table_height = min(1000, max(250, min_rows))
         
+        # Crear DataFrame para iterar sobre los datos
+        df = pd.DataFrame(table_data, columns=headers)
+        
         # Crear tabla HTML con colores y fuente predeterminada de Streamlit
         html_table = f"""
         <style>
