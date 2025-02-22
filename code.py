@@ -263,7 +263,7 @@ def main():
         if n_rows <= 3:
             estado_height = 230
         elif n_rows <= 10:
-            estado_height = 230
+            estado_height = 285
         else:
             estado_height = 500
         
@@ -366,7 +366,7 @@ def main():
         # Ordenar sectores alfabéticamente
         sectores_encontrados = sorted(set(sectores_encontrados))
         # Definir la altura del frame Comentarios por Sector:
-        comentarios_height =150 if len(sectores_encontrados) <= 10 else 200
+        comentarios_height =180 if len(sectores_encontrados) <= 10 else 240
         
         # Crear tabla HTML para comentarios
         html_comentarios = f"""
