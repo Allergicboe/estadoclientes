@@ -236,10 +236,10 @@ def main():
         # Preparar datos para la tabla
         table_data = []
         headers = ["Cuenta", "Sector", "Consultoría", 
-                  "Ingreso a Planilla", "Correo Presentación", 
-                  "Puntos Críticos", "Capacitación Plataforma", 
-                  "Documento Power BI", "Capacitación Power BI", 
-                  "Estrategia de Riego", "Última Actualización"]
+                   "Ingreso a Planilla", "Correo Presentación", 
+                   "Puntos Críticos", "Capacitación Plataforma", 
+                   "Documento Power BI", "Capacitación Power BI", 
+                   "Estrategia de Riego", "Última Actualización"]
         
         for row_index in st.session_state.rows:
             row = data[row_index - 1]  # Ajuste de índice
@@ -258,12 +258,9 @@ def main():
             ]
             table_data.append(row_data)
         
-        # Crear DataFrame
-        df = pd.DataFrame(table_data, columns=headers)
-        
         # Altura tabla estado cliente
         min_rows = max(1, len(table_data))
-        table_height = min(1000, max(150, min_rows * 40 + 50))
+        table_height = min(1000, max(250, min_rows))
         
         # Crear tabla HTML con colores y fuente predeterminada de Streamlit
         html_table = f"""
@@ -342,9 +339,9 @@ def main():
         """
         
         # Mostrar tabla con altura dinámica
-        st.components.v1.html(html_table, height=table_height + 20)  # +20 para un poco de margen
+        st.components.v1.html(html_table, height=table_height)
 
-        # NUEVA SECCIÓN: Tabla de Comentarios por Sector
+        # SECCIÓN: Tabla de Comentarios por Sector (sin límite de altura)
         st.subheader("Comentarios por Sector")
         
         # Preparar datos para la tabla de comentarios
@@ -361,12 +358,10 @@ def main():
         # Ordenar sectores alfabéticamente
         sectores_encontrados = sorted(set(sectores_encontrados))
         
-        # Crear tabla HTML para comentarios
+        # Crear tabla HTML para comentarios sin límite de altura
         html_comentarios = f"""
         <style>
         .comments-container {{
-            max-height: 150px;
-            overflow-y: auto;
             margin-bottom: 0px;
         }}
         .comments-table {{
@@ -422,8 +417,8 @@ def main():
         </div>
         """
         
-        # Mostrar tabla de comentarios
-        st.components.v1.html(html_comentarios, height=150)
+        # Mostrar tabla de comentarios sin límite de altura
+        st.components.v1.html(html_comentarios)
 
         # Mostrar formulario de actualización
         st.header("Actualizar Registro")
