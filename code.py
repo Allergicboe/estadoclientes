@@ -262,7 +262,7 @@ def main():
         df = pd.DataFrame(table_data, columns=headers)
         
         # Altura tabla estado cliente
-        table_height = 500px
+        table_height = 500
         
         # Crear tabla HTML con colores y fuente predeterminada de Streamlit
         html_table = f"""
