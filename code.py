@@ -145,6 +145,23 @@ def main():
     """
     components.html(html_button, height=50)
 
+    # Inyectar CSS global para reducir márgenes en headers y contenedores
+    st.markdown(
+        """
+        <style>
+        h1, h2, h3, h4, h5, h6 {
+            margin-top: 10px;
+            margin-bottom: 5px;
+        }
+        .stApp {
+            padding-bottom: 0px;
+            margin-bottom: 0px;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
     # Inicializar estado de actualizaciones
     if "update_successful" not in st.session_state:
         st.session_state.update_successful = False
@@ -229,17 +246,17 @@ def main():
     if "rows" not in st.session_state:
         st.session_state.rows = None
 
-    # Mostrar tabla dinámica con colores
+    # Mostrar tabla "Estado Actual" con colores
     if st.session_state.rows is not None:
         st.header("Estado Actual")
         
         # Preparar datos para la tabla
         table_data = []
         headers = ["Cuenta", "Sector", "Consultoría", 
-                  "Ingreso a Planilla", "Correo Presentación", 
-                  "Puntos Críticos", "Capacitación Plataforma", 
-                  "Documento Power BI", "Capacitación Power BI", 
-                  "Estrategia de Riego", "Última Actualización"]
+                   "Ingreso a Planilla", "Correo Presentación", 
+                   "Puntos Críticos", "Capacitación Plataforma", 
+                   "Documento Power BI", "Capacitación Power BI", 
+                   "Estrategia de Riego", "Última Actualización"]
         
         for row_index in st.session_state.rows:
             row = data[row_index - 1]  # Ajuste de índice
@@ -254,23 +271,25 @@ def main():
                 row[11], # Documento Power BI
                 row[13], # Capacitación Power BI
                 row[15], # Estrategia de Riego
-                row[18] if len(row) > 18 else "",  # Última Actualización (columna S)
+                row[18] if len(row) > 18 else "",  # Última Actualización
             ]
             table_data.append(row_data)
         
         # Crear DataFrame
         df = pd.DataFrame(table_data, columns=headers)
         
-        # Altura tabla estado cliente
+        # Altura para la tabla "Estado Actual"
         table_height = 300
         
-        # Crear tabla HTML con colores y fuente predeterminada de Streamlit
+        # HTML para la tabla "Estado Actual" con CSS ajustado
         html_table = f"""
         <style>
         .status-table {{
             width: 100%;
             border-collapse: collapse;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }}
         .status-table th, .status-table td {{
             border: 1px solid #ddd;
@@ -281,6 +300,8 @@ def main():
             background-color: #f2f2f2;
             position: sticky;
             top: 0;
+            margin: 0;
+            padding: 8px;
         }}
         .status-table tr:nth-child(even) {{
             background-color: #f9f9f9;
@@ -298,7 +319,7 @@ def main():
             color: #333;
         }}
         </style>
-        <div style="max-height: {table_height}px; overflow-y: auto;">
+        <div style="max-height: {table_height}px; overflow-y: auto; margin-bottom: 0px;">
         <table class="status-table">
             <thead>
                 <tr>
@@ -340,10 +361,10 @@ def main():
         </div>
         """
         
-        # Mostrar tabla con altura dinámica
-        st.components.v1.html(html_table, height=table_height + 20)  # +20 para un poco de margen
+        # Mostrar la tabla "Estado Actual"
+        st.components.v1.html(html_table, height=table_height + 20)
 
-        # NUEVA SECCIÓN: Tabla de Comentarios por Sector
+        # Sección: Comentarios por Sector
         st.subheader("Comentarios por Sector")
         
         # Preparar datos para la tabla de comentarios
@@ -360,22 +381,24 @@ def main():
         # Ordenar sectores alfabéticamente
         sectores_encontrados = sorted(set(sectores_encontrados))
         
-        # Crear tabla HTML para comentarios
+        # HTML para la tabla de comentarios con CSS ajustado
         html_comentarios = f"""
         <style>
         .comments-container {{
             overflow-y: auto;
             margin-bottom: 0px;
+            padding-bottom: 0px;
         }}
         .comments-table {{
             width: 100%;
             border-collapse: collapse;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-            margin-top: 15px;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }}
         .comments-table th, .comments-table td {{
             border: 1px solid #ddd;
-            padding: 12px;
+            padding: 8px;
         }}
         .comments-table th {{
             background-color: #f2f2f2;
@@ -384,6 +407,8 @@ def main():
             position: sticky;
             top: 0;
             z-index: 10;
+            margin: 0;
+            padding: 8px;
         }}
         .comments-table td {{
             text-align: left;
@@ -420,7 +445,7 @@ def main():
         </div>
         """
         
-        # Mostrar tabla de comentarios
+        # Mostrar la tabla de comentarios
         st.components.v1.html(html_comentarios, height=300)
 
         # Mostrar formulario de actualización
