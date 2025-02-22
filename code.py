@@ -278,10 +278,7 @@ def main():
         # Crear DataFrame
         df = pd.DataFrame(table_data, columns=headers)
         
-        # Altura para la tabla "Estado Actual"
-        table_height = 300
-        
-        # HTML para la tabla "Estado Actual" con CSS ajustado
+        # HTML para la tabla "Estado Actual" con CSS ajustado y autoajuste de altura
         html_table = f"""
         <style>
         .status-table {{
@@ -319,7 +316,7 @@ def main():
             color: #333;
         }}
         </style>
-        <div style="max-height: {table_height}px; overflow-y: auto; margin-bottom: 0px;">
+        <div style="overflow-y: auto; margin-bottom: 0px;">
         <table class="status-table">
             <thead>
                 <tr>
@@ -359,10 +356,21 @@ def main():
             </tbody>
         </table>
         </div>
+        <script>
+          function resizeFrame() {
+              const height = document.documentElement.scrollHeight;
+              if (window.Streamlit) {
+                  Streamlit.setFrameHeight(height);
+              }
+          }
+          window.addEventListener('load', resizeFrame);
+          window.addEventListener('resize', resizeFrame);
+          resizeFrame();
+        </script>
         """
         
-        # Mostrar la tabla "Estado Actual"
-        st.components.v1.html(html_table, height=table_height + 20)
+        # Mostrar la tabla "Estado Actual" (la altura se ajusta automáticamente)
+        st.components.v1.html(html_table, height=300, scrolling=True)
 
         # Sección: Comentarios por Sector
         st.subheader("Comentarios por Sector")
@@ -381,7 +389,7 @@ def main():
         # Ordenar sectores alfabéticamente
         sectores_encontrados = sorted(set(sectores_encontrados))
         
-        # HTML para la tabla de comentarios con CSS ajustado
+        # HTML para la tabla de comentarios con CSS ajustado y autoajuste de altura
         html_comentarios = f"""
         <style>
         .comments-container {{
@@ -443,10 +451,21 @@ def main():
             </tbody>
         </table>
         </div>
+        <script>
+          function resizeComments() {
+              const height = document.documentElement.scrollHeight;
+              if (window.Streamlit) {
+                  Streamlit.setFrameHeight(height);
+              }
+          }
+          window.addEventListener('load', resizeComments);
+          window.addEventListener('resize', resizeComments);
+          resizeComments();
+        </script>
         """
         
-        # Mostrar la tabla de comentarios
-        st.components.v1.html(html_comentarios, height=300)
+        # Mostrar la tabla de comentarios (autoajuste de altura)
+        st.components.v1.html(html_comentarios, height=300, scrolling=True)
 
         # Mostrar formulario de actualización
         st.header("Actualizar Registro")
