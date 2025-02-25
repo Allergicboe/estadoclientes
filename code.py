@@ -431,103 +431,128 @@ def main():
         fila_index = st.session_state.rows[0] - 1
         fila_datos = data[fila_index]
         
+        # Opciones para cada paso
+        step_options = {
+            "Ingreso a Planilla Clientes Nuevos": ['Sí', 'No'],
+            "Correo Presentación y Solicitud Información": ['Sí', 'No', 'Programado'],
+            "Agregar Puntos Críticos": ['Sí', 'No'],
+            "Generar Capacitación Plataforma": ['Sí (DropControl)', 'Sí (CDTEC IF)', 'No', 'Programado'],
+            "Generar Documento Power BI": ['Sí', 'No', 'Programado', 'No aplica'],
+            "Generar Capacitación Power BI": ['Sí', 'No', 'Programado', 'No aplica'],
+            "Generar Estrategia de Riego": ['Sí', 'No', 'Programado', 'No aplica']
+        }
+        
         with st.form("update_form"):
-            # Lista de campos (excluyendo Comentarios)
-            update_fields = []
+            # Crear dos columnas para distribuir los campos
+            col1, col2 = st.columns(2)
             
-            # 1. Campo Consultoría
-            consultoria_default = fila_datos[2] if len(fila_datos) >= 3 else ""
-            display_consultoria = consultoria_default.strip() if consultoria_default and consultoria_default.strip() != "" else "Vacío"
-            consultoria_options = ["Sí", "No"]
-            if display_consultoria not in consultoria_options:
-                consultoria_options = [display_consultoria] + consultoria_options
-            try:
-                consultoria_index = consultoria_options.index(display_consultoria)
-            except ValueError:
-                consultoria_index = 0
-            update_fields.append({
-                "type": "selectbox",
-                "label": "Consultoría",
-                "options": consultoria_options,
-                "default_index": consultoria_index,
-                "key": "consultoria"
-            })
-            
-            # 2. Campos para los Pasos a Actualizar
-            steps_mapping = [
-                {"step_label": "Ingreso a Planilla Clientes Nuevos", "step_col": 4, "date_col": 5},
-                {"step_label": "Correo Presentación y Solicitud Información", "step_col": 6, "date_col": 7},
-                {"step_label": "Agregar Puntos Críticos", "step_col": 8, "date_col": 9},
-                {"step_label": "Generar Capacitación Plataforma", "step_col": 10, "date_col": 11},
-                {"step_label": "Generar Documento Power BI", "step_col": 12, "date_col": 13},
-                {"step_label": "Generar Capacitación Power BI", "step_col": 14, "date_col": 15},
-                {"step_label": "Generar Estrategia de Riego", "step_col": 16, "date_col": 17},
-            ]
-            step_options = {
-                "Ingreso a Planilla Clientes Nuevos": ['Sí', 'No'],
-                "Correo Presentación y Solicitud Información": ['Sí', 'No', 'Programado'],
-                "Agregar Puntos Críticos": ['Sí', 'No'],
-                "Generar Capacitación Plataforma": ['Sí (DropControl)', 'Sí (CDTEC IF)', 'No', 'Programado'],
-                "Generar Documento Power BI": ['Sí', 'No', 'Programado', 'No aplica'],
-                "Generar Capacitación Power BI": ['Sí', 'No', 'Programado', 'No aplica'],
-                "Generar Estrategia de Riego": ['Sí', 'No', 'Programado', 'No aplica']
-            }
-            for i, step in enumerate(steps_mapping):
-                step_label = step["step_label"]
-                col_index = step["step_col"] - 1
-                default_val = fila_datos[col_index] if len(fila_datos) > col_index else ""
+            # ----- Columna 1 -----
+            with col1:
+                # 1. Consultoría
+                consultoria_default = fila_datos[2] if len(fila_datos) >= 3 else ""
+                display_consultoria = consultoria_default.strip() if consultoria_default and consultoria_default.strip() != "" else "Vacío"
+                consultoria_options = ["Sí", "No"]
+                if display_consultoria not in consultoria_options:
+                    consultoria_options = [display_consultoria] + consultoria_options
+                try:
+                    consultoria_index = consultoria_options.index(display_consultoria)
+                except ValueError:
+                    consultoria_index = 0
+                consultoria_value = st.selectbox("Consultoría", options=consultoria_options, index=consultoria_index, key="consultoria")
+                
+                # 2. Ingreso a Planilla Clientes Nuevos
+                step1 = {"step_label": "Ingreso a Planilla Clientes Nuevos", "step_col": 4, "date_col": 5}
+                default_val = fila_datos[step1["step_col"] - 1] if len(fila_datos) > step1["step_col"] - 1 else ""
                 display_val = default_val.strip() if default_val and default_val.strip() != "" else "Vacío"
-                options_for_select = step_options[step_label].copy()
+                options_for_select = step_options[step1["step_label"]].copy()
                 if display_val not in options_for_select:
                     options_for_select = [display_val] + options_for_select
                 default_index = options_for_select.index(display_val)
-                update_fields.append({
-                    "type": "selectbox",
-                    "label": step_label,
-                    "options": options_for_select,
-                    "default_index": default_index,
-                    "key": f"step_{i}",
-                    "step_col": step["step_col"],
-                    "date_col": step["date_col"]
-                })
+                step1_value = st.selectbox(step1["step_label"], options=options_for_select, index=default_index, key="step_0")
+                
+                # 3. Correo Presentación y Solicitud Información
+                step2 = {"step_label": "Correo Presentación y Solicitud Información", "step_col": 6, "date_col": 7}
+                default_val = fila_datos[step2["step_col"] - 1] if len(fila_datos) > step2["step_col"] - 1 else ""
+                display_val = default_val.strip() if default_val and default_val.strip() != "" else "Vacío"
+                options_for_select = step_options[step2["step_label"]].copy()
+                if display_val not in options_for_select:
+                    options_for_select = [display_val] + options_for_select
+                default_index = options_for_select.index(display_val)
+                step2_value = st.selectbox(step2["step_label"], options=options_for_select, index=default_index, key="step_1")
+                
+                # 4. Agregar Puntos Críticos
+                step3 = {"step_label": "Agregar Puntos Críticos", "step_col": 8, "date_col": 9}
+                default_val = fila_datos[step3["step_col"] - 1] if len(fila_datos) > step3["step_col"] - 1 else ""
+                display_val = default_val.strip() if default_val and default_val.strip() != "" else "Vacío"
+                options_for_select = step_options[step3["step_label"]].copy()
+                if display_val not in options_for_select:
+                    options_for_select = [display_val] + options_for_select
+                default_index = options_for_select.index(display_val)
+                step3_value = st.selectbox(step3["step_label"], options=options_for_select, index=default_index, key="step_2")
             
-            # Mostrar los campos en un layout de 3 columnas
-            values = {}
-            for i in range(0, len(update_fields), 3):
-                cols = st.columns(3)
-                for j, field in enumerate(update_fields[i:i+3]):
-                    if field["type"] == "selectbox":
-                        values[field["key"]] = cols[j].selectbox(
-                            field["label"],
-                            options=field["options"],
-                            index=field["default_index"],
-                            key=field["key"]
-                        )
+            # ----- Columna 2 -----
+            with col2:
+                # 5. Generar Capacitación Plataforma
+                step4 = {"step_label": "Generar Capacitación Plataforma", "step_col": 10, "date_col": 11}
+                default_val = fila_datos[step4["step_col"] - 1] if len(fila_datos) > step4["step_col"] - 1 else ""
+                display_val = default_val.strip() if default_val and default_val.strip() != "" else "Vacío"
+                options_for_select = step_options[step4["step_label"]].copy()
+                if display_val not in options_for_select:
+                    options_for_select = [display_val] + options_for_select
+                default_index = options_for_select.index(display_val)
+                step4_value = st.selectbox(step4["step_label"], options=options_for_select, index=default_index, key="step_3")
+                
+                # 6. Generar Documento Power BI
+                step5 = {"step_label": "Generar Documento Power BI", "step_col": 12, "date_col": 13}
+                default_val = fila_datos[step5["step_col"] - 1] if len(fila_datos) > step5["step_col"] - 1 else ""
+                display_val = default_val.strip() if default_val and default_val.strip() != "" else "Vacío"
+                options_for_select = step_options[step5["step_label"]].copy()
+                if display_val not in options_for_select:
+                    options_for_select = [display_val] + options_for_select
+                default_index = options_for_select.index(display_val)
+                step5_value = st.selectbox(step5["step_label"], options=options_for_select, index=default_index, key="step_4")
+                
+                # 7. Generar Capacitación Power BI
+                step6 = {"step_label": "Generar Capacitación Power BI", "step_col": 14, "date_col": 15}
+                default_val = fila_datos[step6["step_col"] - 1] if len(fila_datos) > step6["step_col"] - 1 else ""
+                display_val = default_val.strip() if default_val and default_val.strip() != "" else "Vacío"
+                options_for_select = step_options[step6["step_label"]].copy()
+                if display_val not in options_for_select:
+                    options_for_select = [display_val] + options_for_select
+                default_index = options_for_select.index(display_val)
+                step6_value = st.selectbox(step6["step_label"], options=options_for_select, index=default_index, key="step_5")
+                
+                # 8. Generar Estrategia de Riego
+                step7 = {"step_label": "Generar Estrategia de Riego", "step_col": 16, "date_col": 17}
+                default_val = fila_datos[step7["step_col"] - 1] if len(fila_datos) > step7["step_col"] - 1 else ""
+                display_val = default_val.strip() if default_val and default_val.strip() != "" else "Vacío"
+                options_for_select = step_options[step7["step_label"]].copy()
+                if display_val not in options_for_select:
+                    options_for_select = [display_val] + options_for_select
+                default_index = options_for_select.index(display_val)
+                step7_value = st.selectbox(step7["step_label"], options=options_for_select, index=default_index, key="step_6")
             
-            # 3. Campo Comentarios (a pantalla completa, debajo de las tres columnas)
+            # ----- Campo de Comentarios (a pantalla completa) -----
             comentarios_default = fila_datos[17] if len(fila_datos) >= 18 else ""
-            comentarios_value = st.text_area(
-                "Comentarios", 
-                value=comentarios_default if comentarios_default is not None else "", 
-                height=100
-            )
+            comentarios_value = st.text_area("Comentarios", value=comentarios_default if comentarios_default is not None else "", height=100)
             
             submitted = st.form_submit_button("Guardar Cambios", type="primary")
             if submitted:
-                consultoria_value = values["consultoria"]
-                steps_updates = []
-                for field in update_fields:
-                    if field["key"].startswith("step_"):
-                        steps_updates.append({
-                            "step_label": field["label"],
-                            "step_col": field["step_col"],
-                            "date_col": field["date_col"],
-                            "value": values[field["key"]]
-                        })
+                # Consolidar los datos de los pasos
+                steps_updates = [
+                    {"step_label": step1["step_label"], "step_col": step1["step_col"], "date_col": step1["date_col"], "value": step1_value},
+                    {"step_label": step2["step_label"], "step_col": step2["step_col"], "date_col": step2["date_col"], "value": step2_value},
+                    {"step_label": step3["step_label"], "step_col": step3["step_col"], "date_col": step3["date_col"], "value": step3_value},
+                    {"step_label": step4["step_label"], "step_col": step4["step_col"], "date_col": step4["date_col"], "value": step4_value},
+                    {"step_label": step5["step_label"], "step_col": step5["step_col"], "date_col": step5["date_col"], "value": step5_value},
+                    {"step_label": step6["step_label"], "step_col": step6["step_col"], "date_col": step6["date_col"], "value": step6_value},
+                    {"step_label": step7["step_label"], "step_col": step7["step_col"], "date_col": step7["date_col"], "value": step7_value},
+                ]
                 success = update_steps(st.session_state.rows, steps_updates, consultoria_value, comentarios_value)
                 if success:
                     st.session_state.update_successful = True
                     st.rerun()
+
 
 if __name__ == "__main__":
     main()
