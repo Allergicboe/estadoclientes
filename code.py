@@ -432,30 +432,28 @@ def main():
         fila_datos = data[fila_index]
         
         with st.form("update_form"):
-            # Distribuir Consultoría y Comentarios en dos columnas
-            col1, col2 = st.columns(2)
+            # Lista de campos (excluyendo Comentarios)
+            update_fields = []
             
-            with col1:
-                # Campo Consultoría
-                consultoria_default = fila_datos[2] if len(fila_datos) >= 3 else ""
-                display_consultoria = consultoria_default.strip() if consultoria_default and consultoria_default.strip() != "" else "Vacío"
-                consultoria_options = ["Sí", "No"]
-                if display_consultoria not in consultoria_options:
-                    consultoria_options = [display_consultoria] + consultoria_options
-                try:
-                    consultoria_index = consultoria_options.index(display_consultoria)
-                except ValueError:
-                    consultoria_index = 0
-                consultoria_value = st.selectbox("Consultoría", options=consultoria_options, index=consultoria_index)
+            # 1. Campo Consultoría
+            consultoria_default = fila_datos[2] if len(fila_datos) >= 3 else ""
+            display_consultoria = consultoria_default.strip() if consultoria_default and consultoria_default.strip() != "" else "Vacío"
+            consultoria_options = ["Sí", "No"]
+            if display_consultoria not in consultoria_options:
+                consultoria_options = [display_consultoria] + consultoria_options
+            try:
+                consultoria_index = consultoria_options.index(display_consultoria)
+            except ValueError:
+                consultoria_index = 0
+            update_fields.append({
+                "type": "selectbox",
+                "label": "Consultoría",
+                "options": consultoria_options,
+                "default_index": consultoria_index,
+                "key": "consultoria"
+            })
             
-            with col2:
-                # Campo Comentarios
-                comentarios_default = fila_datos[17] if len(fila_datos) >= 18 else ""
-                comentarios_value = st.text_area("Comentarios", value=comentarios_default if comentarios_default is not None else "", height=100)
-            
-            st.markdown("### Pasos a Actualizar")
-            
-            # Para los pasos, puedes agruparlos de a dos en filas
+            # 2. Campos para los Pasos a Actualizar
             steps_mapping = [
                 {"step_label": "Ingreso a Planilla Clientes Nuevos", "step_col": 4, "date_col": 5},
                 {"step_label": "Correo Presentación y Solicitud Información", "step_col": 6, "date_col": 7},
@@ -474,39 +472,62 @@ def main():
                 "Generar Capacitación Power BI": ['Sí', 'No', 'Programado', 'No aplica'],
                 "Generar Estrategia de Riego": ['Sí', 'No', 'Programado', 'No aplica']
             }
+            for i, step in enumerate(steps_mapping):
+                step_label = step["step_label"]
+                col_index = step["step_col"] - 1
+                default_val = fila_datos[col_index] if len(fila_datos) > col_index else ""
+                display_val = default_val.strip() if default_val and default_val.strip() != "" else "Vacío"
+                options_for_select = step_options[step_label].copy()
+                if display_val not in options_for_select:
+                    options_for_select = [display_val] + options_for_select
+                default_index = options_for_select.index(display_val)
+                update_fields.append({
+                    "type": "selectbox",
+                    "label": step_label,
+                    "options": options_for_select,
+                    "default_index": default_index,
+                    "key": f"step_{i}",
+                    "step_col": step["step_col"],
+                    "date_col": step["date_col"]
+                })
             
-            steps_updates = []
-            # Iterar de a dos pasos por fila para reducir la altura
-            for i in range(0, len(steps_mapping), 2):
-                cols = st.columns(2)
-                for j in range(2):
-                    if i + j < len(steps_mapping):
-                        step = steps_mapping[i + j]
-                        step_label = step["step_label"]
-                        col_index = step["step_col"] - 1
-                        default_val = fila_datos[col_index] if len(fila_datos) > col_index else ""
-                        display_val = default_val.strip() if default_val and default_val.strip() != "" else "Vacío"
-                        options_for_select = step_options[step_label].copy()
-                        if display_val not in options_for_select:
-                            options_for_select = [display_val] + options_for_select
-                        default_index = options_for_select.index(display_val)
-                        
-                        # Mostrar el selectbox en la columna correspondiente
-                        selected_val = cols[j].selectbox(step_label, options=options_for_select, index=default_index, key=f"step_{i+j}")
-                        steps_updates.append({
-                            "step_label": step_label,
-                            "step_col": step["step_col"],
-                            "date_col": step["date_col"],
-                            "value": selected_val
-                        })
+            # Mostrar los campos en un layout de 3 columnas
+            values = {}
+            for i in range(0, len(update_fields), 3):
+                cols = st.columns(3)
+                for j, field in enumerate(update_fields[i:i+3]):
+                    if field["type"] == "selectbox":
+                        values[field["key"]] = cols[j].selectbox(
+                            field["label"],
+                            options=field["options"],
+                            index=field["default_index"],
+                            key=field["key"]
+                        )
+            
+            # 3. Campo Comentarios (a pantalla completa, debajo de las tres columnas)
+            comentarios_default = fila_datos[17] if len(fila_datos) >= 18 else ""
+            comentarios_value = st.text_area(
+                "Comentarios", 
+                value=comentarios_default if comentarios_default is not None else "", 
+                height=100
+            )
             
             submitted = st.form_submit_button("Guardar Cambios", type="primary")
             if submitted:
+                consultoria_value = values["consultoria"]
+                steps_updates = []
+                for field in update_fields:
+                    if field["key"].startswith("step_"):
+                        steps_updates.append({
+                            "step_label": field["label"],
+                            "step_col": field["step_col"],
+                            "date_col": field["date_col"],
+                            "value": values[field["key"]]
+                        })
                 success = update_steps(st.session_state.rows, steps_updates, consultoria_value, comentarios_value)
                 if success:
                     st.session_state.update_successful = True
                     st.rerun()
-
 
 if __name__ == "__main__":
     main()
