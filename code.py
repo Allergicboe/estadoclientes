@@ -427,25 +427,35 @@ def main():
         # Mostrar frame Comentarios por Sector
         st.components.v1.html(html_comentarios, height=comentarios_height)
 
-        # Mostrar formulario de actualización
         st.header("Actualizar Registro")
         fila_index = st.session_state.rows[0] - 1
         fila_datos = data[fila_index]
-
+        
         with st.form("update_form"):
-            # 1. Consultoría
-            consultoria_default = fila_datos[2] if len(fila_datos) >= 3 else ""
-            display_consultoria = consultoria_default.strip() if consultoria_default and consultoria_default.strip() != "" else "Vacío"
-            consultoria_options = ["Sí", "No"]
-            if display_consultoria not in consultoria_options:
-                consultoria_options = [display_consultoria] + consultoria_options
-            try:
-                consultoria_index = consultoria_options.index(display_consultoria)
-            except ValueError:
-                consultoria_index = 0
-            consultoria_value = st.selectbox("Consultoría", options=consultoria_options, index=consultoria_index)
-
-            # 2. Pasos a actualizar (en una sola columna)
+            # Distribuir Consultoría y Comentarios en dos columnas
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                # Campo Consultoría
+                consultoria_default = fila_datos[2] if len(fila_datos) >= 3 else ""
+                display_consultoria = consultoria_default.strip() if consultoria_default and consultoria_default.strip() != "" else "Vacío"
+                consultoria_options = ["Sí", "No"]
+                if display_consultoria not in consultoria_options:
+                    consultoria_options = [display_consultoria] + consultoria_options
+                try:
+                    consultoria_index = consultoria_options.index(display_consultoria)
+                except ValueError:
+                    consultoria_index = 0
+                consultoria_value = st.selectbox("Consultoría", options=consultoria_options, index=consultoria_index)
+            
+            with col2:
+                # Campo Comentarios
+                comentarios_default = fila_datos[17] if len(fila_datos) >= 18 else ""
+                comentarios_value = st.text_area("Comentarios", value=comentarios_default if comentarios_default is not None else "", height=100)
+            
+            st.markdown("### Pasos a Actualizar")
+            
+            # Para los pasos, puedes agruparlos de a dos en filas
             steps_mapping = [
                 {"step_label": "Ingreso a Planilla Clientes Nuevos", "step_col": 4, "date_col": 5},
                 {"step_label": "Correo Presentación y Solicitud Información", "step_col": 6, "date_col": 7},
@@ -464,42 +474,39 @@ def main():
                 "Generar Capacitación Power BI": ['Sí', 'No', 'Programado', 'No aplica'],
                 "Generar Estrategia de Riego": ['Sí', 'No', 'Programado', 'No aplica']
             }
-            steps_updates = []
             
-            for i, step in enumerate(steps_mapping):
-                step_label = step["step_label"]
-                col_index = step["step_col"] - 1
-                default_val = fila_datos[col_index] if len(fila_datos) > col_index else ""
-                display_val = default_val.strip() if default_val and default_val.strip() != "" else "Vacío"
-                options_for_select = step_options[step_label].copy()
-                if display_val not in options_for_select:
-                    options_for_select = [display_val] + options_for_select
-                default_index = options_for_select.index(display_val)
-                
-                selected_val = st.selectbox(
-                    step_label,
-                    options=options_for_select,
-                    index=default_index,
-                    key=f"step_{i}"
-                )
-                steps_updates.append({
-                    "step_label": step_label,
-                    "step_col": step["step_col"],
-                    "date_col": step["date_col"],
-                    "value": selected_val
-                })
-
-            # 3. Comentarios
-            comentarios_default = fila_datos[17] if len(fila_datos) >= 18 else ""
-            comentarios_value = st.text_area("Comentarios", value=comentarios_default if comentarios_default is not None else "")
-
+            steps_updates = []
+            # Iterar de a dos pasos por fila para reducir la altura
+            for i in range(0, len(steps_mapping), 2):
+                cols = st.columns(2)
+                for j in range(2):
+                    if i + j < len(steps_mapping):
+                        step = steps_mapping[i + j]
+                        step_label = step["step_label"]
+                        col_index = step["step_col"] - 1
+                        default_val = fila_datos[col_index] if len(fila_datos) > col_index else ""
+                        display_val = default_val.strip() if default_val and default_val.strip() != "" else "Vacío"
+                        options_for_select = step_options[step_label].copy()
+                        if display_val not in options_for_select:
+                            options_for_select = [display_val] + options_for_select
+                        default_index = options_for_select.index(display_val)
+                        
+                        # Mostrar el selectbox en la columna correspondiente
+                        selected_val = cols[j].selectbox(step_label, options=options_for_select, index=default_index, key=f"step_{i+j}")
+                        steps_updates.append({
+                            "step_label": step_label,
+                            "step_col": step["step_col"],
+                            "date_col": step["date_col"],
+                            "value": selected_val
+                        })
+            
             submitted = st.form_submit_button("Guardar Cambios", type="primary")
             if submitted:
                 success = update_steps(st.session_state.rows, steps_updates, consultoria_value, comentarios_value)
                 if success:
-                    # Marcar que se realizó una actualización exitosa para recargar datos
                     st.session_state.update_successful = True
                     st.rerun()
+
 
 if __name__ == "__main__":
     main()
