@@ -6,6 +6,13 @@ from datetime import datetime
 from google.oauth2.service_account import Credentials
 import time
 import pandas as pd
+from zoneinfo import ZoneInfo
+
+def get_chile_timestamp():
+    """
+    Retorna la fecha y hora actual en la zona horaria de Chile con el formato deseado.
+    """
+    return datetime.now(ZoneInfo("America/Santiago")).strftime('%d-%m-%y %H:%M')
 
 # Configuración de la página
 st.set_page_config(
@@ -62,7 +69,7 @@ def find_rows(selected_cuenta, selected_sectores, data):
 
 # Actualizar celdas
 def update_steps(rows, steps_updates, consultoria_value, comentarios_value):
-    now = datetime.now().strftime('%d-%m-%y %H:%M')
+    now = get_chile_timestamp()
     cells_to_update = []
 
     # Actualizar Consultoría
