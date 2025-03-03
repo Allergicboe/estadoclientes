@@ -123,7 +123,7 @@ def get_state_color(state):
         'No aplica': '#9E9E9E',   # Gris
         'Sí (DropControl)': '#2196F3',   # Azul
         'Sí (CDTEC IF)': '#673AB7',      # Morado
-        'Sí (Ambas)': '#4CAF50',         # Morado
+        'Sí (Ambas)': '#4CAF50',         
         'Vacío': '#E0E0E0',       # Gris claro
     }
     return colors.get(state, '#E0E0E0')
@@ -197,8 +197,6 @@ def main():
             st.session_state.selected_sectores = []
 
         st.write("Sectores de Riego (seleccione uno o varios):")
-        
-        # Determinar la cantidad de columnas según el número de sectores
         import math
         if len(unique_sectores) > 20:
             col_count = 3
@@ -207,11 +205,9 @@ def main():
         else:
             col_count = 1
 
-        # Crear las columnas y distribuir los sectores en "chunks"
         columns = st.columns(col_count)
         chunk_size = math.ceil(len(unique_sectores) / col_count)
         sectors_chunks = [unique_sectores[i:i+chunk_size] for i in range(0, len(unique_sectores), chunk_size)]
-
         for idx, chunk in enumerate(sectors_chunks):
             with columns[idx]:
                 for sector in chunk:
@@ -233,6 +229,10 @@ def main():
             st.rerun()
     else:
         st.session_state.selected_sectores = []
+
+    # NUEVO: Filtro de ordenación por fecha de última actualización
+    order_options = ["Más recientes primero", "Más antiguos primero"]
+    selected_order = st.radio("Ordenar por última actualización", order_options, index=0, horizontal=True)
 
     # Botón para buscar el registro
     if st.button("Buscar Registro", type="primary", use_container_width=True):
@@ -256,6 +256,22 @@ def main():
             else:
                 st.session_state.rows = rows
                 st.success(f"Se actualizarán {len(rows)} sector(es).")
+        
+        # Ordenar las filas según la columna "Última Actualización" (columna 32, índice 31)
+        def get_last_update(row_index):
+            try:
+                date_str = data[row_index-1][31] if len(data[row_index-1]) > 31 else ""
+                if date_str and date_str != "Vacío":
+                    return datetime.strptime(date_str, '%d-%m-%y %H:%M')
+            except Exception as e:
+                pass
+            return datetime.min
+
+        if st.session_state.rows:
+            if selected_order == "Más recientes primero":
+                st.session_state.rows = sorted(st.session_state.rows, key=get_last_update, reverse=True)
+            else:
+                st.session_state.rows = sorted(st.session_state.rows, key=get_last_update)
 
     if "rows" not in st.session_state:
         st.session_state.rows = None
