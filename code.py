@@ -16,7 +16,7 @@ def get_chile_timestamp():
 
 # Configuración de la página
 st.set_page_config(
-    page_title="Estado de Clientes",
+    page_title="Registro de Procesos",
     page_icon="👥",
     layout="wide"
 )
@@ -142,7 +142,7 @@ processes = [
 ]
 
 def main():
-    st.title("📌 Estado de Clientes")
+    st.title("📌 Registro de Procesos")
     
     # Botón para abrir la planilla de Google
     html_button = f"""
