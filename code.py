@@ -253,10 +253,10 @@ def main():
                         st.session_state.selected_sectores.remove(sector)
         if st.button("Seleccionar Todos", use_container_width=True):
             st.session_state.selected_sectores = unique_sectores.copy()
-            st.experimental_rerun()
+            st.rerun()
         if st.button("Deseleccionar Todos", use_container_width=True):
             st.session_state.selected_sectores = []
-            st.experimental_rerun()
+            st.rerun()
     else:
         st.session_state.selected_sectores = []
 
@@ -481,7 +481,7 @@ def main():
                 success = update_steps(st.session_state.rows, steps_updates, consultoria_value, comentarios_generales_value)
                 if success:
                     st.session_state.update_successful = True
-                    st.experimental_rerun()
+                    st.rerun()
 
 if __name__ == "__main__":
     main()
