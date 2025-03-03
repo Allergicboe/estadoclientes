@@ -198,10 +198,6 @@ def main():
 
         st.write("Sectores de Riego (seleccione uno o varios):")
         
-        if st.button("Seleccionar Todos", use_container_width=True):
-            st.session_state.selected_sectores = unique_sectores.copy()
-            st.rerun()
-        
         # Determinar la cantidad de columnas según el número de sectores
         import math
         if len(unique_sectores) > 20:
@@ -228,6 +224,9 @@ def main():
                         st.session_state.selected_sectores.append(sector)
                     elif not sector_checked and sector in st.session_state.selected_sectores:
                         st.session_state.selected_sectores.remove(sector)
+        if st.button("Seleccionar Todos", use_container_width=True):
+            st.session_state.selected_sectores = unique_sectores.copy()
+            st.rerun()
 
         if st.button("Deseleccionar Todos", use_container_width=True):
             st.session_state.selected_sectores = []
