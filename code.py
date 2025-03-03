@@ -377,23 +377,22 @@ def main():
                 st.header("Actualizar Registro")
                 fila_index = st.session_state.rows[0] - 1
                 fila_datos = data[fila_index]
-                
-                # Dividir el formulario en dos columnas
+        
+                # Campo de Consultoría en una sola columna (por encima de las dos columnas)
+                consultoria_default = fila_datos[2] if len(fila_datos) >= 3 else ""
+                display_consultoria = consultoria_default.strip() if consultoria_default and consultoria_default.strip() != "" else "Vacío"
+                consultoria_options = ["Sí", "No"]
+                if display_consultoria not in consultoria_options:
+                    consultoria_options = [display_consultoria] + consultoria_options
+                try:
+                    consultoria_index = consultoria_options.index(display_consultoria)
+                except ValueError:
+                    consultoria_index = 0
+                consultoria_value = st.selectbox("Consultoría", options=consultoria_options, index=consultoria_index, key="consultoria_update")
+        
+                # Dividir el resto del formulario en dos columnas
                 col1, col2 = st.columns(2)
-                
                 with col1:
-                    # Campo de Consultoría
-                    consultoria_default = fila_datos[2] if len(fila_datos) >= 3 else ""
-                    display_consultoria = consultoria_default.strip() if consultoria_default and consultoria_default.strip() != "" else "Vacío"
-                    consultoria_options = ["Sí", "No"]
-                    if display_consultoria not in consultoria_options:
-                        consultoria_options = [display_consultoria] + consultoria_options
-                    try:
-                        consultoria_index = consultoria_options.index(display_consultoria)
-                    except ValueError:
-                        consultoria_index = 0
-                    consultoria_value = st.selectbox("Consultoría", options=consultoria_options, index=consultoria_index, key="consultoria_update")
-                    
                     # Campos dinámicos para los valores de cada proceso
                     process_values = {}
                     for i, proc in enumerate(processes):
@@ -403,15 +402,23 @@ def main():
                         if display_val not in options_for_select:
                             options_for_select = [display_val] + options_for_select
                         default_index = options_for_select.index(display_val)
-                        process_values[proc["name"]] = st.selectbox(proc["name"], options=options_for_select, index=default_index, key=f"process_{i}_update")
-                
+                        process_values[proc["name"]] = st.selectbox(
+                            proc["name"],
+                            options=options_for_select,
+                            index=default_index,
+                            key=f"process_{i}_update"
+                        )
                 with col2:
                     # Campos dinámicos para las observaciones de cada proceso
                     process_obs_values = {}
                     for i, proc in enumerate(processes):
                         default_obs = fila_datos[proc["obs_col"] - 1] if len(fila_datos) >= proc["obs_col"] else ""
-                        process_obs_values[proc["name"]] = st.text_area(f"Observaciones - {proc['name']}", value=default_obs, height=68, key=f"obs_{i}_update")
-                    
+                        process_obs_values[proc["name"]] = st.text_area(
+                            f"Observaciones - {proc['name']}",
+                            value=default_obs,
+                            height=68,
+                            key=f"obs_{i}_update"
+                        )
                     # Comentarios generales
                     comentarios_generales = st.text_area("Comentarios generales", value="", height=68, key="comentarios_generales_update")
                 
