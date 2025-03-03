@@ -179,19 +179,46 @@ def main():
     if data is None:
         st.stop()
 
-    # Extraer cuentas únicas
-    unique_cuentas = sorted(set(row[0] for row in data[1:]))
-
     st.header("Buscar Registro")
     
-    # Selección de Cuenta
+    # NUEVO: Filtro para ordenar las cuentas
+    order_options = ["Más recientes primero", "Más antiguos primero", "Orden alfabético"]
+    selected_order = st.radio("Ordenar cuentas", order_options, index=0, horizontal=True)
+    
+    # Extraer las cuentas únicas (sin ordenar aún)
+    unique_cuentas_set = set(row[0] for row in data[1:])
+    unique_cuentas = list(unique_cuentas_set)
+    
+    # Obtener la última actualización para cada cuenta (columna 32, índice 31)
+    cuenta_updates = {}
+    for row in data[1:]:
+        cuenta = row[0]
+        if len(row) > 31:
+            date_str = row[31]
+            if date_str and date_str.strip() != "" and date_str != "Vacío":
+                try:
+                    dt = datetime.strptime(date_str, '%d-%m-%y %H:%M')
+                except Exception:
+                    dt = None
+                if dt:
+                    if cuenta in cuenta_updates:
+                        if dt > cuenta_updates[cuenta]:
+                            cuenta_updates[cuenta] = dt
+                    else:
+                        cuenta_updates[cuenta] = dt
+                        
+    # Ordenar la lista de cuentas según la opción seleccionada
+    if selected_order == "Más recientes primero":
+        unique_cuentas.sort(key=lambda acc: cuenta_updates.get(acc, datetime.min), reverse=True)
+    elif selected_order == "Más antiguos primero":
+        unique_cuentas.sort(key=lambda acc: cuenta_updates.get(acc, datetime.min))
+    elif selected_order == "Orden alfabético":
+        unique_cuentas.sort(key=lambda acc: acc.lower())
+    
+    # Mostrar el selectbox con las cuentas ordenadas
     cuentas_options = ["Seleccione una cuenta"] + unique_cuentas
     selected_cuenta = st.selectbox("Cuenta", cuentas_options, key="cuenta", on_change=reset_search)
     
-    # NUEVO: Filtro de ordenación ubicado justo después del selectbox Cuenta
-    order_options = ["Más recientes primero", "Más antiguos primero", "Orden alfabético"]
-    selected_order = st.radio("Ordenar registros", order_options, index=0, horizontal=True)
-
     # Selección múltiple de Sectores (se muestra si se selecciona una cuenta válida)
     if selected_cuenta != "Seleccione una cuenta":
         sectores_para_cuenta = [row[1] for row in data[1:] if row[0] == selected_cuenta]
@@ -255,29 +282,7 @@ def main():
             else:
                 st.session_state.rows = rows
                 st.success(f"Se actualizarán {len(rows)} sector(es).")
-        
-        # Ordenar las filas según la opción seleccionada
-        def get_last_update(row_index):
-            try:
-                date_str = data[row_index-1][31] if len(data[row_index-1]) > 31 else ""
-                if date_str and date_str != "Vacío":
-                    return datetime.strptime(date_str, '%d-%m-%y %H:%M')
-            except Exception as e:
-                pass
-            return datetime.min
-        
-        if st.session_state.rows:
-            if selected_order == "Más recientes primero":
-                st.session_state.rows = sorted(st.session_state.rows, key=get_last_update, reverse=True)
-            elif selected_order == "Más antiguos primero":
-                st.session_state.rows = sorted(st.session_state.rows, key=get_last_update)
-            elif selected_order == "Orden alfabético":
-                # Ordenar por el campo "Sector" (columna 2)
-                st.session_state.rows = sorted(
-                    st.session_state.rows,
-                    key=lambda r: data[r-1][1].lower() if len(data[r-1]) > 1 else ""
-                )
-
+    
     if "rows" not in st.session_state:
         st.session_state.rows = None
 
