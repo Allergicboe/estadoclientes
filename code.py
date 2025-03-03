@@ -188,9 +188,9 @@ def main():
     cuentas_options = ["Seleccione una cuenta"] + unique_cuentas
     selected_cuenta = st.selectbox("Cuenta", cuentas_options, key="cuenta", on_change=reset_search)
     
-    # NUEVO: Filtro de ordenación por fecha de última actualización, ubicado justo después del selectbox Cuenta
-    order_options = ["Más recientes primero", "Más antiguos primero"]
-    selected_order = st.radio("Ordenar por última actualización", order_options, index=0, horizontal=True)
+    # NUEVO: Filtro de ordenación ubicado justo después del selectbox Cuenta
+    order_options = ["Más recientes primero", "Más antiguos primero", "Orden alfabético"]
+    selected_order = st.radio("Ordenar registros", order_options, index=0, horizontal=True)
 
     # Selección múltiple de Sectores (se muestra si se selecciona una cuenta válida)
     if selected_cuenta != "Seleccione una cuenta":
@@ -256,7 +256,7 @@ def main():
                 st.session_state.rows = rows
                 st.success(f"Se actualizarán {len(rows)} sector(es).")
         
-        # Ordenar las filas según la columna "Última Actualización" (columna 32, índice 31)
+        # Ordenar las filas según la opción seleccionada
         def get_last_update(row_index):
             try:
                 date_str = data[row_index-1][31] if len(data[row_index-1]) > 31 else ""
@@ -265,12 +265,18 @@ def main():
             except Exception as e:
                 pass
             return datetime.min
-
+        
         if st.session_state.rows:
             if selected_order == "Más recientes primero":
                 st.session_state.rows = sorted(st.session_state.rows, key=get_last_update, reverse=True)
-            else:
+            elif selected_order == "Más antiguos primero":
                 st.session_state.rows = sorted(st.session_state.rows, key=get_last_update)
+            elif selected_order == "Orden alfabético":
+                # Ordenar por el campo "Sector" (columna 2)
+                st.session_state.rows = sorted(
+                    st.session_state.rows,
+                    key=lambda r: data[r-1][1].lower() if len(data[r-1]) > 1 else ""
+                )
 
     if "rows" not in st.session_state:
         st.session_state.rows = None
