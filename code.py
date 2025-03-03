@@ -89,7 +89,7 @@ def update_steps(rows, steps_updates, consultoria_value, comentarios_value):
             cells_to_update.append(Cell(row, step_col, update_value))
             if obs_col is not None:
                 cells_to_update.append(Cell(row, obs_col, step["obs_value"]))
-            if update_value in ['Sí', 'Programado', 'Sí (DropControl)', 'Sí (CDTEC IF)']:
+            if update_value in ['Sí', 'Programado', 'Sí (DropControl)', 'Sí (CDTEC IF)', 'Sí (Ambas)']:
                 cells_to_update.append(Cell(row, date_col, now))
             else:
                 cells_to_update.append(Cell(row, date_col, ''))
@@ -123,6 +123,7 @@ def get_state_color(state):
         'No aplica': '#9E9E9E',   # Gris
         'Sí (DropControl)': '#2196F3',   # Azul
         'Sí (CDTEC IF)': '#673AB7',      # Morado
+        'Sí (Ambas)': '#4CAF50',      # Morado
         'Vacío': '#E0E0E0',       # Gris claro
     }
     return colors.get(state, '#E0E0E0')
@@ -134,7 +135,7 @@ processes = [
     {"name": "Ingreso a Planilla Clientes Nuevos", "step_col": 10, "obs_col": 11, "date_col": 12, "options": ['Sí', 'No']},
     {"name": "Correo Presentación y Solicitud Información", "step_col": 13, "obs_col": 14, "date_col": 15, "options": ['Sí', 'No', 'Programado']},
     {"name": "Agregar Puntos Críticos", "step_col": 16, "obs_col": 17, "date_col": 18, "options": ['Sí', 'No']},
-    {"name": "Generar Capacitación Plataforma", "step_col": 19, "obs_col": 20, "date_col": 21, "options": ['Sí (DropControl)', 'Sí (CDTEC IF)', 'No', 'Programado']},
+    {"name": "Generar Capacitación Plataforma", "step_col": 19, "obs_col": 20, "date_col": 21, "options": ['Sí (DropControl)', 'Sí (CDTEC IF)', 'Sí (Ambas)', 'No', 'Programado']},
     {"name": "Generar Documento Power BI", "step_col": 22, "obs_col": 23, "date_col": 24, "options": ['Sí', 'No', 'Programado', 'No aplica']},
     {"name": "Generar Capacitación Power BI", "step_col": 25, "obs_col": 26, "date_col": 27, "options": ['Sí', 'No', 'Programado', 'No aplica']},
     {"name": "Generar Estrategia de Riego", "step_col": 28, "obs_col": 29, "date_col": 30, "options": ['Sí', 'No', 'Programado', 'No aplica']}
