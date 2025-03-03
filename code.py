@@ -123,7 +123,7 @@ def get_state_color(state):
         'No aplica': '#9E9E9E',   # Gris
         'Sí (DropControl)': '#2196F3',   # Azul
         'Sí (CDTEC IF)': '#673AB7',      # Morado
-        'Sí (Ambas)': '#4CAF50',         
+        'Sí (Ambas)': '#4CAF50',
         'Vacío': '#E0E0E0',       # Gris claro
     }
     return colors.get(state, '#E0E0E0')
@@ -188,7 +188,11 @@ def main():
     cuentas_options = ["Seleccione una cuenta"] + unique_cuentas
     selected_cuenta = st.selectbox("Cuenta", cuentas_options, key="cuenta", on_change=reset_search)
     
-    # Selección múltiple de Sectores
+    # NUEVO: Filtro de ordenación por fecha de última actualización, ubicado justo después del selectbox Cuenta
+    order_options = ["Más recientes primero", "Más antiguos primero"]
+    selected_order = st.radio("Ordenar por última actualización", order_options, index=0, horizontal=True)
+
+    # Selección múltiple de Sectores (se muestra si se selecciona una cuenta válida)
     if selected_cuenta != "Seleccione una cuenta":
         sectores_para_cuenta = [row[1] for row in data[1:] if row[0] == selected_cuenta]
         unique_sectores = sorted(set(sectores_para_cuenta))
@@ -223,16 +227,11 @@ def main():
         if st.button("Seleccionar Todos", use_container_width=True):
             st.session_state.selected_sectores = unique_sectores.copy()
             st.rerun()
-
         if st.button("Deseleccionar Todos", use_container_width=True):
             st.session_state.selected_sectores = []
             st.rerun()
     else:
         st.session_state.selected_sectores = []
-
-    # NUEVO: Filtro de ordenación por fecha de última actualización
-    order_options = ["Más recientes primero", "Más antiguos primero"]
-    selected_order = st.radio("Ordenar por última actualización", order_options, index=0, horizontal=True)
 
     # Botón para buscar el registro
     if st.button("Buscar Registro", type="primary", use_container_width=True):
