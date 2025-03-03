@@ -123,7 +123,7 @@ def get_state_color(state):
         'No aplica': '#9E9E9E',   # Gris
         'Sí (DropControl)': '#2196F3',   # Azul
         'Sí (CDTEC IF)': '#673AB7',      # Morado
-        'Sí (Ambas)': '#4CAF50',      # Morado
+        'Sí (Ambas)': '#4CAF50',         # Morado
         'Vacío': '#E0E0E0',       # Gris claro
     }
     return colors.get(state, '#E0E0E0')
@@ -195,13 +195,13 @@ def main():
         
         if "selected_sectores" not in st.session_state:
             st.session_state.selected_sectores = []
-    
+
         st.write("Sectores de Riego (seleccione uno o varios):")
         
         if st.button("Seleccionar Todos", use_container_width=True):
             st.session_state.selected_sectores = unique_sectores.copy()
             st.rerun()
-    
+        
         # Determinar la cantidad de columnas según el número de sectores
         import math
         if len(unique_sectores) > 20:
@@ -210,12 +210,12 @@ def main():
             col_count = 2
         else:
             col_count = 1
-    
+
         # Crear las columnas y distribuir los sectores en "chunks"
         columns = st.columns(col_count)
         chunk_size = math.ceil(len(unique_sectores) / col_count)
         sectors_chunks = [unique_sectores[i:i+chunk_size] for i in range(0, len(unique_sectores), chunk_size)]
-    
+
         for idx, chunk in enumerate(sectors_chunks):
             with columns[idx]:
                 for sector in chunk:
@@ -228,20 +228,7 @@ def main():
                         st.session_state.selected_sectores.append(sector)
                     elif not sector_checked and sector in st.session_state.selected_sectores:
                         st.session_state.selected_sectores.remove(sector)
-    
-        if st.button("Deseleccionar Todos", use_container_width=True):
-            st.session_state.selected_sectores = []
-            st.rerun()
-        
-        with checkbox_container:
-            for sector in unique_sectores:
-                sector_checked = st.checkbox(sector, key=f"sector_{sector}", 
-                                             value=sector in st.session_state.selected_sectores)
-                if sector_checked and sector not in st.session_state.selected_sectores:
-                    st.session_state.selected_sectores.append(sector)
-                elif not sector_checked and sector in st.session_state.selected_sectores:
-                    st.session_state.selected_sectores.remove(sector)
-        
+
         if st.button("Deseleccionar Todos", use_container_width=True):
             st.session_state.selected_sectores = []
             st.rerun()
