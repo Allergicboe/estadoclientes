@@ -129,7 +129,7 @@ def get_state_color(state):
 
 # Definición centralizada de procesos.
 processes = [
-    {"name": "Proceso Nuevo 1", "step_col": 4, "obs_col": 5, "date_col": 6, "options": ['Sí', 'No']},
+    {"name": "Proceso Nuevo 1", "step_col": 4, "obs_col": 5, "date_col": 6, "options": ['Sí', 'No', 'Programado']},
     {"name": "Proceso Nuevo 2", "step_col": 7, "obs_col": 8, "date_col": 9, "options": ['Sí', 'No', 'Programado']},
     {"name": "Ingreso a Planilla Clientes Nuevos", "step_col": 10, "obs_col": 11, "date_col": 12, "options": ['Sí', 'No']},
     {"name": "Correo Presentación y Solicitud Información", "step_col": 13, "obs_col": 14, "date_col": 15, "options": ['Sí', 'No', 'Programado']},
